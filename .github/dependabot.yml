@@ -1,0 +1,67 @@
+version: 2
+updates:
+  # JavaScript/TypeScript dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "UTC"
+    
+    # Group updates to reduce number of PRs
+    groups:
+      # Group production dependencies
+      production-dependencies:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      # Group development dependencies separately
+      development-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+    
+    # Security and version settings
+    open-pull-requests-limit: 15
+    versioning-strategy: "auto"
+    allow:
+      # Automatically update patch and minor versions
+      - dependency-type: "all"
+        update-type: "semver-minor"
+    ignore:
+      # Ignore major updates that might cause breaking changes
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    
+    # PR metadata settings
+    labels:
+      - "dependencies"
+      - "npm"
+      - "automated"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    
+    # PR customizations
+    pull-request-branch-name:
+      separator: "-"
+    rebase-strategy: "auto"
+    target-branch: "main"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "ci"
+      include: "scope"

@@ -1,0 +1,7 @@
+theme: jekyll-theme-minimal
+title: VETO Documentation
+description: Advanced filtering with GeoIP, ASN, domain, URL and content blocking capabilities
+show_downloads: true
+google_analytics:
+github:
+  repository_url: https://github.com/veto-firewall/veto

@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionType:
+        description: 'Version type (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      channel:
+        description: 'Distribution channel for Mozilla Add-ons'
+        required: true
+        default: 'unlisted'
+        type: choice
+        options:
+          - listed
+          - unlisted
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update version
+        run: |
+          # Capture only the version number
+          NEW_VERSION=$(./tools/update-version.sh ${{ github.event.inputs.versionType }} | tail -n 1 | tr -d '\n\r')
+          # Verify it's a valid version
+          if [[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: $NEW_VERSION"
+            exit 1
+          fi
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "Version set to: $NEW_VERSION"
+          
+          # Only format the files we've changed
+          npx prettier --write package*.json src/manifest.json
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Commit version changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json src/manifest.json
+          git commit -m "Release ${NEW_VERSION}"
+          git push origin main
+
+      - name: Create extension package
+        run: |
+          cd dist
+          zip -r veto.zip *
+          mv veto.zip ../veto-${NEW_VERSION}.zip
+          cd ..
+
+      - name: Install web-ext
+        run: |
+          npm install -g web-ext
+
+      - name: Sign extension
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.MOZILLA_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
+        run: |
+          web-ext sign \
+            --api-key="${WEB_EXT_API_KEY}" \
+            --api-secret="${WEB_EXT_API_SECRET}" \
+            --channel=${{ github.event.inputs.channel }} \
+            --source-dir=dist/ \
+            --artifacts-dir=./signed-artifacts
+          SIGNED_XPI_PATH=$(find ./signed-artifacts -name "*.xpi" | head -n 1)
+          cp "${SIGNED_XPI_PATH}" ./veto-${NEW_VERSION}-signed.xpi
+
+      - name: Calculate checksums
+        run: |
+          echo "## SHA256 Checksums" >> checksums.txt
+          echo "### Extension Package" >> checksums.txt
+          EXT_CHECKSUM=$(sha256sum veto-${NEW_VERSION}.zip | awk '{print $1}')
+          echo "veto-${NEW_VERSION}.zip: ${EXT_CHECKSUM}" | tee -a checksums.txt
+          echo "EXT_CHECKSUM=${EXT_CHECKSUM}" >> $GITHUB_ENV
+          
+          echo "### Source Code" >> checksums.txt
+          git archive --format=zip --output=source-${NEW_VERSION}.zip HEAD
+          SRC_CHECKSUM=$(sha256sum source-${NEW_VERSION}.zip | awk '{print $1}')
+          echo "source-${NEW_VERSION}.zip: ${SRC_CHECKSUM}" | tee -a checksums.txt
+          echo "SRC_CHECKSUM=${SRC_CHECKSUM}" >> $GITHUB_ENV
+          
+          echo "### Signed Extension" >> checksums.txt
+          SIGNED_CHECKSUM=$(sha256sum veto-${NEW_VERSION}-signed.xpi | awk '{print $1}')
+          echo "veto-${NEW_VERSION}-signed.xpi: ${SIGNED_CHECKSUM}" | tee -a checksums.txt
+          echo "SIGNED_CHECKSUM=${SIGNED_CHECKSUM}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > release_notes.md << EOL
+          ## SHA256 Checksums
+          
+          **Source Code**: \`${SRC_CHECKSUM}\`
+          **Extension Package (zip)**: \`${EXT_CHECKSUM}\`
+          **Signed Extension Package (xpi)**: \`${SIGNED_CHECKSUM}\`
+          
+          Distribution channel: ${{ github.event.inputs.channel }}
+          
+          Released by: @${{ github.actor }} on $(date --utc +'%Y-%m-%d %H:%M UTC')
+          EOL
+          
+          gh release create v${NEW_VERSION} \
+            --title "VETO v${NEW_VERSION}" \
+            --notes-file release_notes.md \
+            ./veto-${NEW_VERSION}.zip \
+            ./source-${NEW_VERSION}.zip \
+            ./veto-${NEW_VERSION}-signed.xpi \
+            ./checksums.txt

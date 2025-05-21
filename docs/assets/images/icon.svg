@@ -1,0 +1,20 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .ring { fill: none; stroke: #d62828; stroke-width: 60; }
+    .ring-outline { fill: #fff; stroke: #d62828; stroke-width: 64; }
+    .banner { fill: #d62828; stroke: #d62828; stroke-width: 60; }
+    .whiteText { fill: #fff; font-family: Arial, Helvetica, sans-serif; font-weight: 1000; font-size: 142px; letter-spacing: 1px; dominant-baseline: middle; text-anchor: middle; }
+  </style>
+  <!-- Ring-Outline -->
+  <circle cx="200" cy="200" r="170" class="ring-outline"/>
+  <!-- Diagonal Banner (rotated -21 degrees) -->
+  <g transform="rotate(-21 200 200)">
+    <rect x="45" y="165" width="310" height="70" rx="0" class="banner"/>
+  </g>
+  <!-- Thick Outer Ring -->
+  <circle cx="200" cy="200" r="168" class="ring"/>
+  <!-- Diagonal Text (rotated -21 degrees) -->
+  <g transform="rotate(-21 200 200)">
+    <text x="206" y="211" class="whiteText">VETO</text>
+  </g>
+</svg>

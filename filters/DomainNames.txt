@@ -1,0 +1,34 @@
+# Domain Filter Examples
+#
+# Format:
+# - Each line should contain one domain name
+# - Valid domain names only (no URLs, no protocols like http://)
+# - Including a domain will block/allow all its subdomains
+#
+# How Domain Filtering Works:
+# - Adding 'example.com' will match example.com and all its subdomains
+# - Adding 'sub.example.com' will only match that specific subdomain
+# - Domain matching is case-insensitive (Example.com = example.com)
+
+# Examples of blocking entire domains and their subdomains
+# example.com           # Blocks example.com and all subdomains like sub.example.com
+# facebook.com          # Blocks facebook.com and all subdomains
+# twitter.com           # Blocks twitter.com and all subdomains
+
+# Examples of specific subdomains
+# ads.example.com       # Blocks only this specific subdomain
+# tracker.website.com   # Blocks only this specific subdomain
+# api.service.net       # Blocks only this specific subdomain
+
+# Examples of common advertising/tracking domains
+# doubleclick.net       # Google's ad serving platform
+# googleadservices.com  # Google advertising services
+# analytics.google.com  # Google Analytics
+
+# Examples of social media domains
+# facebook.com          # Facebook main domain
+# instagram.com         # Instagram
+# linkedin.com          # LinkedIn
+# tiktok.com            # TikTok
+
+# Uncomment domains above to block/allow them

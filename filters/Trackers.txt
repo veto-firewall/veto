@@ -1,0 +1,26 @@
+# Tracking Parameter Examples
+#
+# Format:
+# - Enter parameter names without values, separated by spaces or new lines
+# - These parameters will be stripped from URLs when encountered
+
+# Google Analytics UTM Parameters
+utm_source utm_medium utm_campaign utm_term utm_content
+
+# Facebook Tracking Parameters
+# fbclid fb_ref fb_source
+
+# Google Ads and Search
+# gclid gclsrc 
+
+# Microsoft Ads
+# msclkid
+
+# Email Marketing Tracking
+# mc_cid mc_eid _hsenc _hsmi
+
+# General Analytics and Attribution
+# ref referral source itm_source itm_medium itm_campaign itm_content
+# at_medium at_campaign yclid dclid
+
+# Uncomment other parameters above to strip them from URLs

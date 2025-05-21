@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+    <title>VETO</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="header-left">
+          <img
+            src="../assets/images/icon-48.png"
+            alt="VETO Logo"
+            class="logo"
+            width="32"
+            height="32"
+          />
+          <span class="version" id="extension-version"></span>
+        </div>
+        <div class="header-right">
+          <div id="theme-switcher"></div>
+          <a
+            href="https://github.com/veto-firewall/veto"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-icon"
+          >
+            <img src="../assets/images/github.png" alt="GitHub" width="24" height="24" />
+          </a>
+          <a
+            href="https://www.patreon.com/veto_firewall/about"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-icon"
+          >
+            <img src="../assets/images/patreon.png" alt="Patreon" width="24" height="24" />
+          </a>
+        </div>
+      </header>
+
+      <div class="sections">
+        <!-- Settings Section -->
+        <details id="settings-section">
+          <summary role="button" aria-controls="settings-content">Preferences</summary>
+          <div class="section-content" id="settings-content" role="region">
+            <div class="setting-group">
+              <h3>MaxMind License</h3>
+              <p class="setting-info">
+                Required for GeoIP and ASN blocking features. Create a
+                <a
+                  href="https://www.maxmind.com/en/geolite2/signup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><strong>free account</strong></a
+                >
+                to get your
+                <a
+                  href="https://www.maxmind.com/en/accounts/current/license-key"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><strong>license key</strong></a
+                >.
+              </p>
+              <div class="setting-item">
+                <label for="license-key">License Key</label>
+                <input type="text" id="license-key" placeholder="License Key" required />
+              </div>
+              <button id="save-maxmind" aria-label="Save MaxMind credentials">Save</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- Basic Rules Section -->
+        <details id="basic-rules-section">
+          <summary role="button" aria-controls="basic-rules-content">Content Filtering</summary>
+          <div class="section-content" id="basic-rules-content" role="region">
+            <div class="setting-item">
+              <input type="checkbox" id="suspend-until-load" />
+              <label for="suspend-until-load">Suspend network activity until filters load</label>
+            </div>
+
+            <div class="setting-item">
+              <label for="http-handling">Unsecure HTTP:</label>
+              <select id="http-handling" aria-label="Unsecure HTTP handling">
+                <option value="allow">Allow</option>
+                <option value="redirect" selected>Redirect to HTTPS</option>
+                <option value="block">Block</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <input type="checkbox" id="block-fonts" />
+              <label for="block-fonts">Block Remote fonts</label>
+            </div>
+
+            <div class="setting-item">
+              <input type="checkbox" id="block-images" />
+              <label for="block-images">Block Images</label>
+            </div>
+
+            <div class="setting-item">
+              <input type="checkbox" id="block-media" />
+              <label for="block-media">Block Media</label>
+            </div>
+          </div>
+        </details>
+
+        <!-- Custom DNR Rules Section -->
+        <details id="dnr-rules-section">
+          <summary role="button" aria-controls="dnr-rules-content">Domain & URL Filters</summary>
+          <div class="section-content" id="dnr-rules-content" role="region">
+            <div class="setting-info">
+              <p>
+                <strong>Rule Limits:</strong> Firefox has a maximum limit of 5,000 declarative
+                rules. Each line in these text areas creates one rule when saved.
+              </p>
+            </div>
+            <!-- Allowed Domains -->
+            <div class="rule-group allowed">
+              <h3>Allowed Domains</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="allowed-domains-terminating" checked />
+                <label for="allowed-domains-terminating">Terminating (Final) Rule</label>
+              </div>
+              <span class="setting-info">Max: 990 rules</span>
+              <textarea
+                id="allowed-domains"
+                placeholder="Enter domain names separated by new line or space"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-allowed-domains">Save</button>
+                <button id="export-allowed-domains">Export</button>
+              </div>
+            </div>
+
+            <!-- Blocked Domains -->
+            <div class="rule-group blocked">
+              <h3>Blocked Domains</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="blocked-domains-terminating" checked />
+                <label for="blocked-domains-terminating">Terminating (Final) Rule</label>
+              </div>
+              <span class="setting-info">Max: 1,500 rules</span>
+              <textarea
+                id="blocked-domains"
+                placeholder="Enter domain names separated by new line or space"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-blocked-domains">Save</button>
+                <button id="export-blocked-domains">Export</button>
+              </div>
+            </div>
+
+            <!-- Allowed URLs -->
+            <div class="rule-group allowed">
+              <h3>Allowed URLs</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="allowed-urls-terminating" checked />
+                <label for="allowed-urls-terminating">Terminating (Final) Rule</label>
+              </div>
+              <span class="setting-info">Max: 500 rules</span>
+              <textarea id="allowed-urls" placeholder="Enter URLs separated by new line"></textarea>
+              <div class="rule-actions">
+                <button id="save-allowed-urls">Save</button>
+                <button id="export-allowed-urls">Export</button>
+              </div>
+            </div>
+
+            <!-- Blocked URLs -->
+            <div class="rule-group blocked">
+              <h3>Blocked URLs</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="blocked-urls-terminating" checked />
+                <label for="blocked-urls-terminating">Terminating (Final) Rule</label>
+              </div>
+              <span class="setting-info">Max: 1,300 rules</span>
+              <textarea id="blocked-urls" placeholder="Enter URLs separated by new line"></textarea>
+              <div class="rule-actions">
+                <button id="save-blocked-urls">Save</button>
+                <button id="export-blocked-urls">Export</button>
+              </div>
+            </div>
+
+            <!-- Allowed URLs (RegEx) -->
+            <div class="rule-group allowed">
+              <h3>Allowed URLs (RegEx)</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="allowed-regex-terminating" checked />
+                <label for="allowed-regex-terminating">Terminating (Final) Rule</label>
+              </div>
+              <span class="setting-info">Max: 200 rules</span>
+              <textarea
+                id="allowed-regex"
+                placeholder="Enter RegEx patterns separated by new line"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-allowed-regex">Save</button>
+                <button id="export-allowed-regex">Export</button>
+              </div>
+            </div>
+
+            <!-- Blocked URLs (RegEx) -->
+            <div class="rule-group blocked">
+              <h3>Blocked URLs (RegEx)</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="blocked-regex-terminating" checked />
+                <label for="blocked-regex-terminating">Terminating (Final) Rule</label>
+              </div>
+              <span class="setting-info">Max: 501 rules</span>
+              <textarea
+                id="blocked-regex"
+                placeholder="Enter RegEx patterns separated by new line"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-blocked-regex">Save</button>
+                <button id="export-blocked-regex">Export</button>
+              </div>
+            </div>
+
+            <!-- Remove Tracking Params -->
+            <div class="rule-group">
+              <h3>Remove tracking modules (UTM and others) from URL</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="tracking-params-terminating" />
+                <label for="tracking-params-terminating">Terminating (Final) Rule</label>
+              </div>
+              <textarea
+                id="tracking-params"
+                placeholder="utm_source utm_medium utm_campaign utm_term utm_content"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-tracking-params">Save</button>
+                <button id="export-tracking-params">Export</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- IP Address Filters Section -->
+        <details id="ip-rules-section">
+          <summary role="button" aria-controls="ip-rules-content">IP Address Filters</summary>
+          <div class="section-content" id="ip-rules-content" role="region">
+            <div class="setting-item ip-settings">
+              <input type="checkbox" id="block-private-ips" />
+              <label for="block-private-ips">Block Private IPs</label>
+            </div>
+            <!-- Allowed IPs -->
+            <div class="rule-group allowed">
+              <h3>Allowed IPs and IP ranges</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="allowed-ips-terminating" checked />
+                <label for="allowed-ips-terminating">Terminating (Final) Rule</label>
+              </div>
+              <textarea
+                id="allowed-ips"
+                placeholder="Enter IPs or IP ranges separated by new line or space"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-allowed-ips">Save</button>
+                <button id="export-allowed-ips">Export</button>
+              </div>
+            </div>
+
+            <!-- Blocked IPs -->
+            <div class="rule-group blocked">
+              <h3>Blocked IPs and IP ranges</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="blocked-ips-terminating" checked />
+                <label for="blocked-ips-terminating">Terminating (Final) Rule</label>
+              </div>
+              <textarea
+                id="blocked-ips"
+                placeholder="Enter IPs or IP ranges separated by new line or space"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-blocked-ips">Save</button>
+                <button id="export-blocked-ips">Export</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Network Filters Section -->
+        <details id="asn-rules-section">
+          <summary role="button" aria-controls="asn-rules-content">Network Filters</summary>
+          <div class="section-content" id="asn-rules-content" role="region">
+            <!-- Allowed ASNs -->
+            <div class="rule-group allowed">
+              <h3>Allowed ASN codes</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="allowed-asns-terminating" checked />
+                <label for="allowed-asns-terminating">Terminating (Final) Rule</label>
+              </div>
+              <textarea
+                id="allowed-asns"
+                placeholder="Enter ASN codes separated by new line or space"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-allowed-asns">Save</button>
+                <button id="export-allowed-asns">Export</button>
+              </div>
+            </div>
+
+            <!-- Blocked ASNs -->
+            <div class="rule-group blocked">
+              <h3>Blocked ASN codes</h3>
+              <div class="rule-options">
+                <input type="checkbox" id="blocked-asns-terminating" checked />
+                <label for="blocked-asns-terminating">Terminating (Final) Rule</label>
+              </div>
+              <textarea
+                id="blocked-asns"
+                placeholder="Enter ASN codes separated by new line or space"
+              ></textarea>
+              <div class="rule-actions">
+                <button id="save-blocked-asns">Save</button>
+                <button id="export-blocked-asns">Export</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Location Filters Section -->
+        <details id="geoip-section">
+          <summary role="button" aria-controls="geoip-content">Location Filters</summary>
+          <div class="section-content" id="geoip-content" role="region">
+            <div id="geoip-continents">
+              <!-- Continent blocks will be added here dynamically -->
+            </div>
+            <!-- Continent blocks will be added here dynamically -->
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

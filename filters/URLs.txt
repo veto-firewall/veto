@@ -1,0 +1,40 @@
+# URL Filter Examples
+#
+# Format:
+# - Each line should contain one complete URL
+# - Include the protocol (http:// or https://)
+# - Can match specific pages, paths, or URL patterns
+# - Supports wildcards (*) for flexible matching
+
+# Examples of specific URLs
+# https://example.com/ads           # Blocks only this specific URL
+# https://website.com/tracking.php  # Blocks this specific file
+# https://blog.example.org/post/123 # Blocks this specific page
+
+# Examples of paths
+# https://example.com/ads/*         # Blocks all URLs under this path
+# https://website.com/checkout/*    # Blocks all URLs under this path
+# https://shop.example.org/product* # Blocks URLs starting with this path
+
+# Examples of file types
+# https://*.example.com/*.exe       # Blocks exe files from any example.com subdomain
+# https://*.website.com/*.zip       # Blocks zip files from any website.com subdomain
+# https://*/downloads/*.pdf         # Blocks PDF files from any download path
+
+# Examples of query parameters
+# https://example.com/search?*tracking=*  # Blocks URLs with tracking parameters
+# https://website.com/page?*ref=*         # Blocks URLs with ref parameters
+
+# Examples of specific subdomains with paths
+# https://ads.example.com/*          # Blocks all content from this subdomain
+# https://tracking.website.com/*     # Blocks all content from this subdomain
+
+# Uncomment URLs above to block/allow them
+
+# Examples of common ad/tracker URLs
+# https://pagead2.googlesyndication.com/* # Google ad service
+# https://*.doubleclick.net/*       # DoubleClick ad network
+# https://analytics.google.com/*    # Google Analytics
+# https://*.facebook.com/tr         # Facebook tracking pixel
+
+# Uncomment URLs above to block/allow them

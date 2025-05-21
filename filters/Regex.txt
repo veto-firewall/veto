@@ -1,0 +1,29 @@
+# Regex Filter Examples
+#
+# Format:
+# - Plain regex patterns without delimiters
+# - URL/domain patterns should be written as valid regex
+
+# Tracking URL patterns
+# utm_.*           # Google Analytics UTM parameters
+# fbclid           # Facebook Click Identifier
+# gclid           # Google Click Identifier
+# _hsenc          # HubSpot click tracking
+# _hsmi           # HubSpot email tracking
+# mc_eid          # Mailchimp tracking
+
+# Content blocking patterns
+# ^https?://.*ads\..*\.com/.*$    # Block URLs containing 'ads' subdomain
+# ^https?://analytics\..*\.com/.*$ # Block analytics endpoints
+# ^https?://.*\.tracking\..*$     # Block domains with 'tracking' in them
+
+# Domain patterns
+# ^.*\.example\.com$              # Matches any subdomain of example.com
+# ^(www\.)?bad-site\.com$         # Matches bad-site.com with or without www
+# ^.*\.(ru|cn)$                  # Matches domains ending with .ru or .cn
+
+# Path patterns
+# ^https?://.*/(ads|banners)/.*$  # Block paths containing /ads/ or /banners/
+# ^https?://.*\.(exe|apk)$        # Block downloads of executable files
+
+# Uncomment lines above to use these filter rules

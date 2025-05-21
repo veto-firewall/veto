@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Generated files
+**/*.min.js
+
+# Assets
+assets/
+assets/**/*.mmdb
+assets/images/
+
+# Coverage directory
+coverage/
+
+# Cache files
+.eslintcache
+
+# Other files to ignore
+**/*.svg
+**/*.md
+docs/bundle-report.html

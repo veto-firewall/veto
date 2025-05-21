@@ -1,0 +1,65 @@
+# ASN (Autonomous System Number) Filter Examples
+#
+# Format:
+# - Enter ASN numbers separated by spaces or new lines
+# - ASNs are used by large organizations for routing traffic on the internet
+# - Each number represents a network owned by a specific organization
+#
+# How to find ASN numbers:
+# 1. Visit https://ipinfo.io/asn-lookup or https://bgp.tools/
+# 2. Search for a company name (e.g., "Microsoft", "Facebook")
+# 3. Look for the ASN number (usually shown as "ASXXXX")
+#
+# Common ASN Lookup Tools:
+# - https://ipinfo.io/asn-lookup
+# - https://bgp.tools/
+# - https://bgp.he.net/
+# - https://www.ultratools.com/tools/asnInfo
+
+# Microsoft https://ipinfo.io/AS3598
+# 3598 5761 8068 8069 8070 8074 8075 12076 52985 58593 59067 62540 398656 58862
+
+# Apple
+# 714 6185
+
+# TikTok
+# 137775 396986 138699 150436
+
+# Valve, Steam
+# 32590
+
+# Edgecast
+# 15133 14210 14153
+
+# Meta, Facebook, Instagram, Whatsapp
+# 32934 63293 54115 149642
+
+# X.com, Twitter
+# 13414 35995 63179
+
+# Intel
+# 4983 55958
+
+# Linkedin
+# 13443 14413 55163 40793
+
+# Skype
+# 198097
+
+# Akamai
+# 12222 16625 18680 18717 20940 21342 24319 31108 32787 33905 34164 35204 35994 36183 43639 63949 200005 17204 24354 213120 21357 133103
+
+# Lumene
+# 3549
+
+# Qwilt
+# 20253 24257
+
+# Yandex
+# 13238 44534 200350 208398 210560
+
+# VK (VKontakte, MailRu)
+# 47541 28709 57973 21051 47764 60863 47542
+
+# Rostelecom
+# 12389 12332 12380 12683 12685 12730 12846 13056 13118 15468 15759 15934 16287 16301 44412
