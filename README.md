@@ -66,9 +66,7 @@ The extension uses several key technologies:
 
 ### Bundle Analysis
 
-<div class="report-container">
-  <iframe src="https://veto-firewall.github.io/veto/bundle-report.html" width="100%" height="500px" frameborder="0"></iframe>
-</div>
+[![Bundle Report](assets/images/bundle-report-parsed.png)](https://veto-firewall.github.io/veto/bundle-report.html)
 
 ## Building and Publishing
 
