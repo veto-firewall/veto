@@ -1,5 +1,10 @@
 import { getSettings, saveSettings, getRules, saveRules } from '../utils/storage';
-import { createDeclarativeNetRequestRules } from '../utils/rules';
+import {
+  createDeclarativeNetRequestRules,
+  resetRuleCount,
+  getRuleCount,
+  getFirefoxRuleLimit,
+} from '../utils/rules';
 import { isPrivateIP, ipMatchesRange } from '../utils/ip';
 import { resolveDomain } from '../utils/dns';
 import { getCountryByIp, getAsnByIp, loadGeoIpDatabase, loadAsnDatabase } from '../utils/geoip';
@@ -23,6 +28,10 @@ import { isValid } from 'ipaddr.js';
 
 let settings: Awaited<ReturnType<typeof getSettings>>;
 let rules: Awaited<ReturnType<typeof getRules>>;
+
+// Special dynamic rule ID to use for the temporary suspend rule
+// Using a very high ID to minimize chance of conflict with regular rules
+const SUSPEND_RULE_ID = 999999;
 
 async function initExtension(): Promise<void> {
   void console.log('Initializing extension...');
@@ -81,40 +90,165 @@ async function setupDeclarativeRules(): Promise<void> {
     await loadGeoIpDatabase();
     await loadAsnDatabase();
 
-    await browser.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: await browser.declarativeNetRequest
-        .getDynamicRules()
-        .then(rules => rules.map(r => r.id)),
-      addRules: [
-        ...createTrackingParamRules(), // 1-2
-        ...createBasicRules(), // 3-9
-        ...createDeclarativeNetRequestRules(rules.allowedDomains, 10), // 10-999
-        ...createDeclarativeNetRequestRules(rules.blockedDomains, 1000), // 1000-2499
-        ...createDeclarativeNetRequestRules(rules.allowedUrls, 2500), // 2500-2999
-        ...createDeclarativeNetRequestRules(rules.blockedUrls, 3000), // 3000-4299
-        ...createDeclarativeNetRequestRules(rules.allowedRegex, 4300), // 4300-4499
-        ...createDeclarativeNetRequestRules(rules.blockedRegex, 4500), // 4500-5000
-      ] as browser.declarativeNetRequest.Rule[],
+    // Reset rule count before generating new rules
+    resetRuleCount();
+
+    // Clear all existing rules (both session and dynamic)
+    // Get existing session rules
+    const existingSessionRules = await browser.declarativeNetRequest.getSessionRules();
+    const existingSessionRuleIds = existingSessionRules.map(r => r.id);
+
+    // Get existing dynamic rules
+    const existingDynamicRules = await browser.declarativeNetRequest.getDynamicRules();
+    const existingDynamicRuleIds = existingDynamicRules.map(r => r.id);
+
+    // Remove all existing session rules
+    if (existingSessionRuleIds.length > 0) {
+      await browser.declarativeNetRequest.updateSessionRules({
+        removeRuleIds: existingSessionRuleIds,
+        addRules: [],
+      });
+    }
+    
+    // Remove all existing dynamic rules
+    if (existingDynamicRuleIds.length > 0) {
+      await browser.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: existingDynamicRuleIds,
+        addRules: [],
+      });
+    }
+
+    // Handle "suspend until filters load" setting - uses dynamic rules
+    // This rule has priority over all others and blocks everything while rules are loading
+    if (settings.suspendUntilFiltersLoad) {
+      // Add a temporary blocking rule with maximum priority
+      await browser.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [SUSPEND_RULE_ID], // Remove any existing suspend rule first
+        addRules: [
+          {
+            id: SUSPEND_RULE_ID,
+            priority: 100, // Maximum priority
+            action: { type: 'block' },
+            condition: {
+              urlFilter: '*://*/*',
+              resourceTypes: [
+                'main_frame',
+                'sub_frame',
+                'stylesheet',
+                'script',
+                'image',
+                'font',
+                'object',
+                'xmlhttprequest',
+                'ping',
+                'csp_report',
+                'media',
+                'websocket',
+                'other',
+              ],
+            },
+          },
+        ],
+      });
+
+      void console.log('Added temporary blocking rule while filters load');
+    }    // Use a sequential ID counter for all rules
+    let nextRuleId = 1;
+    
+    // Create the content filtering rules
+    const basicRules = createBasicRules(nextRuleId);
+    nextRuleId += basicRules.length || 1;
+    
+    // Create tracking parameter rules
+    const trackingRules = createTrackingParamRules(nextRuleId);
+    nextRuleId += trackingRules.length || 1;
+    
+    // Create domain rules
+    const allowedDomainRules = createDeclarativeNetRequestRules(rules.allowedDomains, nextRuleId);
+    nextRuleId += allowedDomainRules.length || 1;
+    
+    const blockedDomainRules = createDeclarativeNetRequestRules(rules.blockedDomains, nextRuleId);
+    nextRuleId += blockedDomainRules.length || 1;
+    
+    // Create URL rules
+    const allowedUrlRules = createDeclarativeNetRequestRules(rules.allowedUrls, nextRuleId);
+    nextRuleId += allowedUrlRules.length || 1;
+    
+    const blockedUrlRules = createDeclarativeNetRequestRules(rules.blockedUrls, nextRuleId);
+    nextRuleId += blockedUrlRules.length || 1;
+    
+    // Create regex rules
+    const allowedRegexRules = createDeclarativeNetRequestRules(rules.allowedRegex, nextRuleId);
+    nextRuleId += allowedRegexRules.length || 1;
+    
+    const blockedRegexRules = createDeclarativeNetRequestRules(rules.blockedRegex, nextRuleId);
+    nextRuleId += blockedRegexRules.length || 1;
+    nextRuleId += blockedRegexRules.length || 1;
+    
+    // Combine all rules into a single array
+    const domainAndUrlRules = [
+      ...allowedDomainRules,
+      ...blockedDomainRules,
+      ...allowedUrlRules,
+      ...blockedUrlRules,
+      ...allowedRegexRules,
+      ...blockedRegexRules,
+    ] as browser.declarativeNetRequest.Rule[];
+
+    // Combine all rule arrays
+    const sessionRules = [...basicRules, ...trackingRules, ...domainAndUrlRules];
+
+    // Add all the rules to the browser using session rules
+    // We already cleared all existing rules at the beginning of this function
+    // So we can safely add our new rules without worrying about duplicates
+    await browser.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [], // Explicitly specify empty array for compatibility
+      addRules: sessionRules,
     });
 
-    void console.log('Dynamic rules updated successfully');
+    // Save current rule count to storage for the popup to display
+    await browser.storage.local.set({ ruleCount: getRuleCount() });
+
+    // Remove the temporary blocking rule if it was added
+    if (settings.suspendUntilFiltersLoad) {
+      await browser.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [SUSPEND_RULE_ID],
+        addRules: [],
+      });
+      void console.log('Removed temporary blocking rule after filters loaded successfully');
+    }
+
+    void console.log(
+      `Session rules updated successfully: ${getRuleCount()}/${getFirefoxRuleLimit()} rules used`,
+    );
   } catch (e) {
-    void console.error('Failed to update dynamic rules:', e);
+    void console.error('Failed to update rules:', e);
+
+    // Store error information for the popup
+    const errorInfo = {
+      message: e instanceof Error ? e.message : 'Unknown error',
+      timestamp: Date.now(),
+    };
+    await browser.storage.local.set({ ruleUpdateError: errorInfo });
+
+    // Make sure to remove the blocking rule if there was an error
+    if (settings.suspendUntilFiltersLoad) {
+      try {
+        await browser.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: [SUSPEND_RULE_ID],
+          addRules: [],
+        });
+      } catch (removeError) {
+        void console.error('Failed to remove blocking rule:', removeError);
+      }
+    }
   }
 }
 
-function createBasicRules(): browser.declarativeNetRequest.Rule[] {
+function createBasicRules(startId: number = 10): browser.declarativeNetRequest.Rule[] {
   const basicRules: browser.declarativeNetRequest.Rule[] = [];
-  // Use rule IDs in the range 3-9 for basic rules
-  // This avoids conflict with other rule ranges:
-  // - tracking param rules (1-2)
-  // - allowed domains (10-999)
-  // - blocked domains (1000-2499)
-  // - allowed URLs (2500-2999)
-  // - blocked URLs (3000-4299)
-  // - allowed regex (4300-4499)
-  // - blocked regex (4500-5000)
-  let ruleId = 3;
+  // Use the provided start ID or default to 10
+  let ruleId = startId;
 
   // HTTP handling
   if (settings.httpHandling === 'redirect') {
@@ -179,32 +313,12 @@ function createBasicRules(): browser.declarativeNetRequest.Rule[] {
   return basicRules;
 }
 
-function createTrackingParamRules(): browser.declarativeNetRequest.Rule[] {
-  const trackingRules: browser.declarativeNetRequest.Rule[] = [];
-
-  if (rules.trackingParams.length > 0) {
-    const params = rules.trackingParams.map(rule => rule.value).join('|');
-    // Use rule ID 1 for tracking param rules
-    // This avoids conflict with all other rules:
-    // - basic rules (3-9)
-    // - allowed/blocked domains, URLs, and regex rules (10-5000)
-    const ruleId = 1;
-
-    trackingRules.push({
-      id: ruleId,
-      priority: 90,
-      action: {
-        type: 'redirect',
-        redirect: { transform: { queryTransform: { removeParams: [params] } } },
-      },
-      condition: {
-        regexFilter: `[?&](${params})=`,
-        resourceTypes: ['main_frame', 'sub_frame'],
-      },
-    });
-  }
-
-  return trackingRules;
+function createTrackingParamRules(startId: number = 50): browser.declarativeNetRequest.Rule[] {
+  // Simply wrap our rules with createDeclarativeNetRequestRules
+  // This will handle combining them into optimized regex patterns
+  return rules.trackingParams.length > 0
+    ? createDeclarativeNetRequestRules(rules.trackingParams, startId)
+    : [];
 }
 
 // Check if a hostname should be blocked due to private IP restrictions

@@ -95,27 +95,184 @@ export function isValidRuleValue(type: RuleType, value: string): boolean {
   }
 }
 
+// Rule count tracking
+let totalRuleCount = 0;
+
+// Firefox limitation for declarativeNetRequest
+export const FIREFOX_RULE_LIMIT = 5000; // Default fallback value
+export const MAX_REGEX_LENGTH = 1024;
+
+// Add a local type declaration to match Firefox's runtime API
+interface ExtendedDNRApi {
+  MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES?: number;
+  MAX_NUMBER_OF_DYNAMIC_RULES?: number;
+  MAX_NUMBER_OF_REGEX_RULES?: number;
+}
+
+// Get the current Firefox rule limit (may be updated in the future)
+export function getFirefoxRuleLimit(): number {
+  try {
+    // Cast to our extended interface for better type safety
+    const api = browser.declarativeNetRequest as ExtendedDNRApi;
+
+    // Try to get the session rules limit first (what we're actually using)
+    if (typeof api.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES === 'number') {
+      return api.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES;
+    }
+
+    // Fall back to dynamic rules limit
+    if (typeof api.MAX_NUMBER_OF_DYNAMIC_RULES === 'number') {
+      return api.MAX_NUMBER_OF_DYNAMIC_RULES;
+    }
+
+    // Other possible property names
+    if (typeof api.MAX_NUMBER_OF_REGEX_RULES === 'number') {
+      return api.MAX_NUMBER_OF_REGEX_RULES;
+    }
+
+    // Last resort fallback
+    return FIREFOX_RULE_LIMIT;
+  } catch (error) {
+    void error;
+    // In case of any errors, return the default limit
+    return FIREFOX_RULE_LIMIT;
+  }
+}
+
+// Get the current rule count
+export function getRuleCount(): number {
+  return totalRuleCount;
+}
+
+// Reset the rule count (call before regenerating all rules)
+export function resetRuleCount(): void {
+  totalRuleCount = 0;
+}
+
+// Create regex patterns from domain lists with optimizations
+function createRegexPatterns(domains: string[]): string[] {
+  if (domains.length === 0) return [];
+
+  // Group domains by TLD for better compression
+  const domainsByTLD: Record<string, string[]> = {};
+
+  // Process and group domains
+  for (const domain of domains) {
+    const parts = domain.split('.');
+
+    // Skip invalid domains
+    if (parts.length < 2) continue;
+
+    const tld = parts[parts.length - 1];
+    if (!domainsByTLD[tld]) {
+      domainsByTLD[tld] = [];
+    }
+
+    domainsByTLD[tld].push(domain);
+  }
+
+  const patterns: string[] = [];
+
+  // Process each TLD group
+  for (const tld in domainsByTLD) {
+    // Sort domains by length for better grouping potential
+    const domainGroup = domainsByTLD[tld].sort((a, b) => a.length - b.length);
+
+    let currentPattern = '';
+
+    for (const domain of domainGroup) {
+      // Escape dots in domain name for regex
+      const escapedDomain = domain.replace(/\./g, '\\.');
+
+      // Check if adding this domain would exceed the regex length limit
+      if (currentPattern.length + escapedDomain.length + 1 > MAX_REGEX_LENGTH) {
+        // Add the current pattern to the list and start a new one
+        patterns.push(currentPattern);
+        currentPattern = escapedDomain;
+      } else {
+        // Add to current pattern with separator if needed
+        currentPattern = currentPattern ? `${currentPattern}|${escapedDomain}` : escapedDomain;
+      }
+    }
+
+    // Add the last pattern if it exists
+    if (currentPattern) {
+      patterns.push(currentPattern);
+    }
+  }
+
+  return patterns;
+}
+
 export function createDeclarativeNetRequestRules(
   rules: Rule[],
-  startId: number = 10,
+  startId: number = 1,
 ): browser.declarativeNetRequest.Rule[] {
   const dnrRules: browser.declarativeNetRequest.Rule[] = [];
-  // Use the provided startId parameter, defaulting to 10 if not specified
-  // This allows different ranges for different rule types:
-  // - 1-2: Tracking param rules - 2 rules
-  // - 3-9: Basic system rules - 7 rules
-  // - 10-999: Allowed domains - 990 rules
-  // - 1000-2499: Blocked domains - 1,500 rules
-  // - 2500-2999: Allowed URLs - 500 rules
-  // - 3000-4299: Blocked URLs - 1,300 rules
-  // - 4300-4499: Allowed regex rules - 200 rules
-  // - 4500-5000: Blocked regex rules - 501 rules
-  // Firefox has a limit of 5,000 declarative rules total
   let id = startId;
 
-  for (const rule of rules) {
-    if (!rule.enabled) continue;
+  // Filter enabled rules
+  const enabledRules = rules.filter(rule => rule.enabled);
+  if (enabledRules.length === 0) return dnrRules;
 
+  // For domain rules, try to optimize with regex
+  if (enabledRules.length > 0 && enabledRules[0].type === 'domain') {
+    const domainValues = enabledRules.map(rule => rule.value);
+    const action = enabledRules[0].action;
+
+    // Create regex patterns (multiple if needed to stay under length limit)
+    const patterns = createRegexPatterns(domainValues);
+
+    // Create rules from patterns
+    for (const pattern of patterns) {
+      const ruleAction: browser.declarativeNetRequest._RuleAction =
+        action === 'block' ? { type: 'block' } : { type: 'allow' };
+
+      dnrRules.push({
+        id: id++,
+        priority: 1,
+        action: ruleAction,
+        condition: {
+          regexFilter: `.*://(.*\\.)?${pattern}/.*`,
+        },
+      });
+
+      totalRuleCount++;
+    }
+
+    return dnrRules;
+  }
+
+  // For tracking parameters, optimize if possible
+  if (enabledRules.length > 0 && enabledRules[0].type === 'tracking') {
+    const paramValues = enabledRules.map(rule => rule.value);
+
+    // Create regex patterns (multiple if needed to stay under length limit)
+    const patterns = createRegexPatterns(paramValues);
+
+    // Create rules from patterns
+    for (const pattern of patterns) {
+      dnrRules.push({
+        id: id++,
+        priority: 1,
+        action: {
+          type: 'redirect',
+          redirect: { transform: { queryTransform: { removeParams: [pattern] } } },
+        },
+        condition: {
+          regexFilter: `[?&](${pattern})=`,
+          resourceTypes: ['main_frame', 'sub_frame'],
+        },
+      });
+
+      totalRuleCount++;
+    }
+
+    return dnrRules;
+  }
+
+  // For other rule types or when optimization isn't applicable
+  for (const rule of enabledRules) {
     const action: browser.declarativeNetRequest._RuleAction =
       rule.action === 'block'
         ? { type: 'block' }
@@ -144,6 +301,8 @@ export function createDeclarativeNetRequestRules(
         action,
         condition: condition as browser.declarativeNetRequest._RuleCondition,
       });
+
+      totalRuleCount++;
     }
   }
 

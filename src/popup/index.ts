@@ -10,6 +10,7 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
+import { getFirefoxRuleLimit } from '../utils/rules';
 
 // Import countries data types for typechecking
 import type {
@@ -23,6 +24,38 @@ let rules: RuleSet;
 const toast = new Toast();
 
 // Initialize the popup
+/**
+ * Update the rule count display in the UI
+ */
+async function updateRuleCount(): Promise<void> {
+  const result = await browser.storage.local.get('ruleCount');
+  const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
+  const ruleLimit = getFirefoxRuleLimit();
+
+  // Update rule count element
+  const ruleCountElement = document.getElementById('rule-count');
+  if (ruleCountElement) {
+    ruleCountElement.textContent = String(ruleCount);
+
+    // Add warning class if approaching limit
+    if (ruleCount > Math.floor(ruleLimit * 0.9)) {
+      // 90% of limit = danger
+      ruleCountElement.classList.add('danger');
+    } else if (ruleCount > Math.floor(ruleLimit * 0.8)) {
+      // 80% of limit = warning
+      ruleCountElement.classList.add('warning');
+    } else {
+      ruleCountElement.classList.remove('warning', 'danger');
+    }
+  }
+
+  // Update rule limit element
+  const ruleLimitElement = document.getElementById('rule-limit');
+  if (ruleLimitElement) {
+    ruleLimitElement.textContent = String(ruleLimit);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Show loading state
   document.body.classList.add('loading');
@@ -34,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await setupCountryList();
     initThemeSwitcher();
     initExtensionInfo();
+    await updateRuleCount();
 
     // Initialize UI event handlers
     setupUIEvents(settings, rules, saveSettingsToBackground, saveRulesToBackground);
@@ -519,8 +553,20 @@ async function saveRulesToBackground(): Promise<void> {
       type: 'saveRules',
       rules: rules,
     });
+
+    // Update rule count after saving rules
+    await updateRuleCount();
+
+    // Check if we're approaching the limit and show a notification if needed
+    const result = await browser.storage.local.get('ruleCount');
+    const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
+
+    if (ruleCount > 4500) {
+      toast.show(`Warning: Using ${ruleCount}/${getFirefoxRuleLimit()} rules`, 'info');
+    }
   } catch (error) {
     void error;
+    toast.show('Error saving rules', 'error');
   }
 }
 
