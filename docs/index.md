@@ -1,15 +1,29 @@
----
-layout: default
----
+# Simple Firewall For Your Browser
 
-# VETO: Advanced Web Filtering Extension
+<div align="center">
+  <img src="../assets/images/icon-128.png" alt="VETO Logo" width="128" height="128">
+</div>
 
 [![GitHub](https://img.shields.io/github/stars/veto-firewall/veto?style=social)](https://github.com/veto-firewall/veto)
 [![Firefox Add-on](https://img.shields.io/amo/v/veto)](https://addons.mozilla.org/firefox/addon/veto-firewall/)
+[![Quality Check](https://github.com/veto-firewall/veto/actions/workflows/ci.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/ci.yml)
+[![Release](https://github.com/veto-firewall/veto/actions/workflows/release.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/release.yml)
+[![Support the Project](https://img.shields.io/badge/Patreon-Support-F96854.svg)](https://patreon.com/veto_firewall)
 
-VETO is a Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security.
+Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security. Available on [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).
 
-## Purpose and Features
+- [Features](#features)
+- [Architecture and Dependencies](#architecture-and-dependencies)
+  - [Technology Stack](#technology-stack)
+  - [Dependencies](#dependencies)
+  - [Bundle Analysis](#bundle-analysis)
+- [Building and Publishing](#building-and-publishing)
+  - [Prerequisites](#prerequisites)
+  - [Building from Source](#building-from-source)
+  - [Publishing a New Release](#publishing-a-new-release)
+- [Contributing](#contributing)
+
+## Features
 
 VETO gives you fine-grained control over your browsing experience by allowing you to:
 
@@ -19,46 +33,20 @@ VETO gives you fine-grained control over your browsing experience by allowing yo
 - **Content Blocking**: Filter out unwanted content from websites
 - **Simple Interface**: Easy-to-use popup interface to manage all filtering rules
 
-## How to Use
+To use GeoIP and ASN filtering features you need a free MaxMind account:
 
-### Installation
+1. Sign up [here](https://www.maxmind.com/en/geolite2/signup)
+2. Generate a [license key](https://www.maxmind.com/en/accounts/current/license-key)
+3. Enter this key in VETO settings
+4. Click "Save" to save your license key
 
-Install VETO directly from the [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).
+## Architecture And Dependencies
 
-### Using the Extension
+The extension follows a modular architecture:
 
-1. **Access the Interface**: Click the VETO icon in your browser toolbar to open the popup interface
-2. **Manage Rules**: Create, edit, and delete filtering rules through the intuitive interface
-3. **Geographic Filtering**: Block or allow traffic from specific countries or regions
-4. **Custom Rules**: Create custom rules for specific domains or content patterns
-5. **Configure Settings**: Adjust extension settings to match your preferences
-
-### Setting Up MaxMind for GeoIP and ASN Filtering
-
-To use GeoIP and ASN filtering features, you'll need to create a free MaxMind account:
-
-1. Go to [MaxMind's website](https://www.maxmind.com/en/geolite2/signup)
-2. Sign up for a free GeoLite2 account
-3. After creating your account, navigate to "My License Key" under "Services"
-4. Generate a new license key
-5. In the VETO extension settings, enter your MaxMind license key
-6. Save your settings for the changes to take effect
-
-### Example Use Cases
-
-- Block traffic from specific countries for security reasons
-- Prevent connections to known malicious ASNs
-- Block ads and trackers using domain and content filtering
-- Create custom rules to improve your browsing privacy
-
-## Limitations
-
-- **Firefox Only**: VETO is currently a Firefox-only extension (v3 Manifest)
-- **Performance Impact**: While extensive filtering rules may slightly impact browsing performance, blocking ads, trackers, and heavy unwanted content can actually improve overall browsing speed
-- **Complex Rules**: Some advanced rules may require technical knowledge to implement correctly
-- **False Positives**: Geographic and ASN blocking may occasionally block legitimate content
-
-## Technical Information
+- **Background Script**: Handles filtering logic and browser events
+- **Popup Interface**: User interface for managing rules and settings
+- **Utility Modules**: Handle specialized functions like GeoIP lookups
 
 ### Technology Stack
 
@@ -76,13 +64,11 @@ The extension uses several key technologies:
 - **Storage API**: For storing user preferences and rules
 - **DNS API**: For domain name resolution
 
-### Architecture
+### Bundle Analysis
 
-The extension follows a modular architecture:
-
-- **Background Script**: Handles filtering logic and browser events
-- **Popup Interface**: User interface for managing rules and settings
-- **Utility Modules**: Handle specialized functions like GeoIP lookups
+<div class="report-container">
+  <iframe src="https://veto-firewall.github.io/veto/bundle-report.html" width="100%" height="500px" frameborder="0"></iframe>
+</div>
 
 ## Building and Publishing
 
@@ -137,16 +123,6 @@ No manual steps are required as the entire process from version bumping to Firef
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.txt](https://github.com/veto-firewall/veto/blob/main/LICENSE.txt) file for details.
 
 ---
 
