@@ -2,7 +2,7 @@ import { isFQDN, isURL, isIP, isInt } from 'validator';
 import { Rule, RuleType, RuleAction, RuleSet } from './types';
 import { getFirefoxRuleLimit } from './rulesDNR';
 import { ServiceFactory } from '../services';
-import { logBlockedRequest } from './logger';
+import type { LoggingService, RequestLogData } from '../services/logging/LoggingService';
 
 const DEFAULT_RULESET: RuleSet = {
   allowedDomains: [],
@@ -18,6 +18,13 @@ const DEFAULT_RULESET: RuleSet = {
   blockedAsns: [],
   blockedCountries: {},
 };
+
+/**
+ * Gets the logging service instance from ServiceFactory
+ */
+function getLoggingService(): LoggingService {
+  return ServiceFactory.getInstance().getLoggingService();
+}
 
 let ruleId: number | null = null;
 
@@ -230,7 +237,7 @@ export async function processIpRules(
     cacheCallback(cacheKey, true);
 
     if (details) {
-      logBlockedRequest({
+      getLoggingService().logBlockedRequest({
         url: details.url,
         domain: url.hostname,
         ip: ip,
@@ -307,7 +314,7 @@ export async function processAsnRules(
     cacheCallback(cacheKey, true);
 
     if (details) {
-      logBlockedRequest({
+      getLoggingService().logBlockedRequest({
         url: details.url,
         domain: url.hostname,
         ip: ip,
@@ -374,7 +381,7 @@ export async function processGeoIpRules(
     cacheCallback(cacheKey, true);
 
     if (details) {
-      logBlockedRequest({
+      getLoggingService().logBlockedRequest({
         url: details.url,
         domain: url.hostname,
         ip: ip,

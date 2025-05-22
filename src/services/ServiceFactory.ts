@@ -9,6 +9,7 @@ import { NetworkService } from './network';
 import { MaxMindService } from './maxmind';
 import { EventService } from './events';
 import { CacheService } from './cache';
+import { LoggingService } from './logging';
 
 /**
  * Factory for creating and initializing services
@@ -172,6 +173,7 @@ export class ServiceFactory {
     
     if (!this.services.has(key)) {
       const service = new CacheService();
+      
       this.services.set(key, service);
       
       // Auto-initialize
@@ -188,6 +190,31 @@ export class ServiceFactory {
   }
   
   /**
+   * Get or create a logging service
+   * @returns Logging service instance
+   */
+  public getLoggingService(): LoggingService {
+    const key = 'logging';
+    
+    if (!this.services.has(key)) {
+      const service = new LoggingService();
+      
+      this.services.set(key, service);
+      
+      // Auto-initialize
+      if (document.readyState === 'complete') {
+        service.initialize().catch(err => console.error('Failed to initialize LoggingService:', err));
+      } else {
+        window.addEventListener('load', () => {
+          service.initialize().catch(err => console.error('Failed to initialize LoggingService:', err));
+        });
+      }
+    }
+    
+    return this.services.get(key) as LoggingService;
+  }
+  
+  /**
    * Initialize all services
    * @returns Promise that resolves when all services are initialized
    */
@@ -199,6 +226,7 @@ export class ServiceFactory {
     this.getMaxMindService();
     this.getEventService();
     this.getCacheService();
+    this.getLoggingService();
     
     // Initialize all services in proper order
     const initPromises = Array.from(this.services.values()).map(service => service.initialize());

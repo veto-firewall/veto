@@ -3,10 +3,8 @@
  * Provides common functionality for rule processing
  */
 import { RuleSet } from '../../../utils/types';
-import { logBlockedRequest } from '../../../utils/logger';
-
-// Import BlockReason type from logger module
-type BlockReason = 'ip' | 'asn' | 'geoip' | 'domain' | 'url' | 'regex' | 'private-ip' | 'content';
+import { ServiceFactory } from '../../ServiceFactory';
+import type { LoggingService, BlockReason, RequestLogData } from '../../logging/LoggingService';
 
 /**
  * Type for the cache callback function
@@ -23,6 +21,11 @@ export abstract class BaseRuleProcessor {
   protected rules: RuleSet;
   
   /**
+   * Logging service for logging blocked requests
+   */
+  protected loggingService: LoggingService;
+  
+  /**
    * Callback function to update cache
    */
   protected cacheCallback: CacheCallback;
@@ -35,6 +38,7 @@ export abstract class BaseRuleProcessor {
   constructor(rules: RuleSet, cacheCallback: CacheCallback) {
     this.rules = rules;
     this.cacheCallback = cacheCallback;
+    this.loggingService = ServiceFactory.getInstance().getLoggingService();
   }
 
   /**
@@ -65,7 +69,7 @@ export abstract class BaseRuleProcessor {
   ): void {
     const url = new URL(details.url);
     
-    logBlockedRequest({
+    this.loggingService.logBlockedRequest({
       url: details.url,
       domain: url.hostname,
       ip: ip,

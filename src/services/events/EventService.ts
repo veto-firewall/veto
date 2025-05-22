@@ -6,7 +6,6 @@ import { IService } from '../types';
 import { ExtensionMsg, MsgSaveSettings, MsgSaveRules, MsgExportRules } from '../../utils/types';
 import { setupDeclarativeRules } from '../../utils/rulesDNR';
 import { ServiceFactory } from '../ServiceFactory';
-import { logBlockedRequest } from '../../utils/logger';
 
 // Type-only imports for better tree-shaking
 import type { StorageService } from '../storage/StorageService';
@@ -14,6 +13,8 @@ import type { RuleService } from '../rule/RuleService';
 import type { NetworkService } from '../network/NetworkService';
 import type { MaxMindService } from '../maxmind/MaxMindService';
 import type { CacheService } from '../cache/CacheService';
+import type { LoggingService } from '../logging/LoggingService';
+import type { RequestLogData } from '../logging/LoggingService';
 
 /**
  * Service for managing browser events and messages
@@ -24,6 +25,7 @@ export class EventService implements IService {
   private networkService: NetworkService;
   private maxmindService: MaxMindService;
   private cacheService: CacheService;
+  private loggingService: LoggingService;
   
   /**
    * Current settings
@@ -45,6 +47,7 @@ export class EventService implements IService {
     this.networkService = factory.getNetworkService();
     this.maxmindService = factory.getMaxMindService();
     this.cacheService = factory.getCacheService();
+    this.loggingService = factory.getLoggingService();
   }
   
   /**
@@ -219,7 +222,7 @@ export class EventService implements IService {
             (details.type === 'media' && this.settings.blockMedia)
           ) {
             // Log blocked content
-            logBlockedRequest({
+            this.loggingService.logBlockedRequest({
               url: details.url,
               domain: url.hostname,
               resourceType: details.type,
@@ -238,7 +241,7 @@ export class EventService implements IService {
 
           // Log the blocked request
           const ip = await this.networkService.resolveDomain(url.hostname);
-          logBlockedRequest({
+          this.loggingService.logBlockedRequest({
             url: details.url,
             domain: url.hostname,
             ip: ip || 'Unknown',
