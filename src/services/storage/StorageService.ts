@@ -24,6 +24,29 @@ const DEFAULT_RULESET: RuleSet = {
 };
 
 /**
+ * Default settings used when no settings are found in storage
+ */
+const DEFAULT_SETTINGS = {
+  suspendUntilFiltersLoad: false,
+  maxmind: {
+    licenseKey: '',
+  },
+  httpHandling: 'redirect',
+  blockRemoteFonts: false,
+  blockImages: false,
+  blockMedia: false,
+  blockPrivateIPs: false,
+  sectionStates: {
+    'settings-section': true,
+    'basic-rules-section': false,
+    'dnr-rules-section': false,
+    'ip-rules-section': false,
+    'asn-rules-section': false,
+    'geoip-section': false,
+  },
+};
+
+/**
  * Service for handling browser storage operations
  * Abstracts the browser.storage API for easier usage
  */
@@ -94,10 +117,16 @@ export class StorageService implements IStorageService {
 
   /**
    * Get settings from browser storage
-   * @returns Promise resolving to the current settings
+   * @returns Promise resolving to the current settings or default settings if none found
    */
-  async getSettings<T>(): Promise<T | null> {
-    return this.getValue<T>('settings');
+  async getSettings<T>(): Promise<T> {
+    try {
+      const settings = await this.getValue<T>('settings');
+      return settings || DEFAULT_SETTINGS as unknown as T;
+    } catch (error) {
+      console.error('Failed to retrieve settings from storage:', error);
+      return DEFAULT_SETTINGS as unknown as T;
+    }
   }
 
   /**
