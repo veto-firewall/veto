@@ -1,7 +1,6 @@
 import { isFQDN, isURL, isIP, isInt } from 'validator';
 import { Rule, RuleType, RuleAction, RuleSet } from './types';
 import { getFirefoxRuleLimit } from './rulesDNR';
-import { ipMatchesRange } from './ip';
 import { resolveDomain } from './dns';
 import { ServiceFactory } from '../services';
 import { logBlockedRequest } from './logger';
@@ -208,8 +207,13 @@ export async function processIpRules(
     return null;
   }
 
+  // Get network service to use its IP matching functionality
+  const networkService = ServiceFactory.getInstance().getNetworkService();
+  
   // First, find any matching allowed IP rule
-  const allowedRule = rules.allowedIps.find(rule => rule.enabled && ipMatchesRange(ip, rule.value));
+  const allowedRule = rules.allowedIps.find(
+    rule => rule.enabled && networkService.ipMatchesRange(ip, rule.value)
+  );
 
   // Check if there's a terminating allow rule - these take highest precedence
   if (allowedRule && allowedRule.isTerminating) {
@@ -219,7 +223,9 @@ export async function processIpRules(
   }
 
   // Then check for blocked IPs - block rules always override non-terminating allow rules
-  const blockedRule = rules.blockedIps.find(rule => rule.enabled && ipMatchesRange(ip, rule.value));
+  const blockedRule = rules.blockedIps.find(
+    rule => rule.enabled && networkService.ipMatchesRange(ip, rule.value)
+  );
   if (blockedRule) {
     void console.log(`IP ${ip} matched block rule: ${blockedRule.value}`);
     cacheCallback(cacheKey, true);
