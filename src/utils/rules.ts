@@ -3,7 +3,7 @@ import { Rule, RuleType, RuleAction, RuleSet } from './types';
 import { getFirefoxRuleLimit } from './rulesDNR';
 import { ipMatchesRange } from './ip';
 import { resolveDomain } from './dns';
-import { getCountryByIp, getAsnByIp } from './maxmind';
+import { ServiceFactory } from '../services';
 import { logBlockedRequest } from './logger';
 
 const DEFAULT_RULESET: RuleSet = {
@@ -275,7 +275,8 @@ export async function processAsnRules(
   }
 
   void console.log(`Checking ASN rules for ${url.hostname} (IP: ${ip})`);
-  const asn = await getAsnByIp(ip);
+  const maxmindService = ServiceFactory.getInstance().getMaxMindService();
+  const asn = await maxmindService.getAsnByIp(ip);
   void console.log(`ASN lookup result for ${ip}: ${asn}`);
 
   if (asn === null) {
@@ -351,7 +352,8 @@ export async function processGeoIpRules(
   }
 
   void console.log(`Checking GeoIP rules for ${url.hostname} (IP: ${ip})`);
-  const country = await getCountryByIp(ip);
+  const maxmindService = ServiceFactory.getInstance().getMaxMindService();
+  const country = await maxmindService.getCountryByIp(ip);
   void console.log(`Country lookup result for ${ip}: ${country}`);
 
   if (!country) {

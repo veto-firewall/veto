@@ -4,12 +4,18 @@
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import { RuleSet, Rule } from '../../../utils/types';
 import { resolveDomain } from '../../../utils/dns';
-import { getAsnByIp } from '../../../utils/maxmind';
+import { ServiceFactory } from '../../ServiceFactory';
 
 /**
  * Handles processing of ASN-based rules
  */
 export class AsnRuleProcessor extends BaseRuleProcessor {
+  /**
+   * MaxMind service for ASN lookups
+   * @private
+   */
+  private maxmindService;
+
   /**
    * Creates a new ASN rule processor
    * @param rules - Rules to process
@@ -17,6 +23,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
    */
   constructor(rules: RuleSet, cacheCallback: CacheCallback) {
     super(rules, cacheCallback);
+    this.maxmindService = ServiceFactory.getInstance().getMaxMindService();
   }
   
   /**
@@ -42,7 +49,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
     }
 
     console.log(`Checking ASN rules for ${url.hostname} (IP: ${ip})`);
-    const asn = await getAsnByIp(ip);
+    const asn = await this.maxmindService.getAsnByIp(ip);
     console.log(`ASN lookup result for ${ip}: ${asn}`);
 
     if (asn === null) {

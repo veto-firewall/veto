@@ -4,12 +4,18 @@
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import { RuleSet } from '../../../utils/types';
 import { resolveDomain } from '../../../utils/dns';
-import { getCountryByIp } from '../../../utils/maxmind';
+import { ServiceFactory } from '../../ServiceFactory';
 
 /**
  * Handles processing of GeoIP-based rules
  */
 export class GeoIpRuleProcessor extends BaseRuleProcessor {
+  /**
+   * MaxMind service for country lookups
+   * @private
+   */
+  private maxmindService;
+
   /**
    * Creates a new GeoIP rule processor
    * @param rules - Rules to process
@@ -17,6 +23,7 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
    */
   constructor(rules: RuleSet, cacheCallback: CacheCallback) {
     super(rules, cacheCallback);
+    this.maxmindService = ServiceFactory.getInstance().getMaxMindService();
   }
   
   /**
@@ -42,7 +49,7 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
     }
 
     console.log(`Checking GeoIP rules for ${url.hostname} (IP: ${ip})`);
-    const country = await getCountryByIp(ip);
+    const country = await this.maxmindService.getCountryByIp(ip);
     console.log(`Country lookup result for ${ip}: ${country}`);
 
     if (!country) {
