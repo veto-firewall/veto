@@ -1,26 +1,13 @@
-import { geoIpCache, asnCache } from './caching';
-import { isValid as _isValid } from 'ipaddr.js';
-// Import types only for TypeScript - Reader will be dynamically imported
-import type { Reader as _Reader } from 'mmdb-lib';
-import type { CountryResponse, AsnResponse } from 'mmdb-lib/lib/reader/response';
-import { getSettings } from './settings';
-import type * as tarStream from 'tar-stream';
-import type { Readable } from 'stream';
+/**
+ * This file is maintained for backward compatibility.
+ * It re-exports functionality from MaxMindService.
+ * 
+ * For new code, please use the MaxMindService directly.
+ */
+import { ServiceFactory } from '../services';
 
-// Define file structure interface for MMDB files
-interface MMDBFile {
-  name: string;
-  data: Uint8Array;
-}
-
-// Define a type for the reader to avoid using 'any'
-interface ReaderInstance<T> {
-  get(_ip: string): T | null;
-}
-
-// Database reader instances with proper typing
-let geoIpReader: ReaderInstance<CountryResponse> | null = null;
-let asnReader: ReaderInstance<AsnResponse> | null = null;
+// Get the MaxMind service
+const maxmindService = ServiceFactory.getInstance().getMaxMindService();
 
 /**
  * Load the GeoIP database from storage into memory
