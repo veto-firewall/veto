@@ -2,8 +2,7 @@
  * StorageService handles all browser storage operations
  * Provides a centralized interface for getting and setting data in browser storage
  */
-import { IStorageService } from '../types';
-import { RuleSet } from '../../utils/types';
+import { IStorageService, RuleSet } from '../types';
 
 /**
  * Default ruleset used when no rules are found in storage

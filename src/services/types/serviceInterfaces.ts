@@ -1,10 +1,5 @@
 /**
- * Common interfaces and types for services
- */
-import { Rule, RuleSet } from '../utils/types';
-
-/**
- * Base interface for service initialization
+ * Service interface definitions
  */
 export interface IService {
   /**
@@ -59,3 +54,6 @@ export interface IStorageService extends IService {
    */
   setValue<T>(key: string, value: T): Promise<boolean>;
 }
+
+// Import dependency types
+import { RuleSet } from './ruleTypes';

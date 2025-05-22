@@ -1,7 +1,10 @@
 /**
  * Services module exports
  */
-export * from './types';
+// Export all types from the types directory 
+export * from './types/index';
+
+// Export services
 export * from './ServiceFactory';
 export * from './storage';
 export * from './rule';

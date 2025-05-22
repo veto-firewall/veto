@@ -1,4 +1,4 @@
-import { Rule, Settings, RuleSet } from './types';
+import { Rule, Settings, RuleSet } from '../services/types';
 
 // Define a type alias for browser's declarativeNetRequest resource type
 type ResourceType = browser.declarativeNetRequest.ResourceType;

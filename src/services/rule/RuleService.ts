@@ -2,9 +2,8 @@
  * RuleService handles all rule-related operations
  * Centralizes rule processing, validation, and management
  */
-import { IRuleService } from '../types';
+import { IRuleService, RuleSet, Rule, RuleType, RuleAction } from '../types';
 import { StorageService } from '../storage/StorageService';
-import { RuleSet, Rule, RuleType, RuleAction } from '../../utils/types';
 import { isFQDN, isURL, isIP, isInt } from 'validator';
 import { getFirefoxRuleLimit } from '../../utils/rulesDNR';
 import { BaseRuleProcessor } from './processors/BaseRuleProcessor';

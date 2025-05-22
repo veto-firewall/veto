@@ -3,7 +3,7 @@
  * It simplifies access to the service architecture from the popup
  */
 
-import { Settings, RuleSet } from '../../utils/types';
+import { Settings, RuleSet } from '../../services/types';
 import type { LRUCache } from 'lru-cache';
 
 /**

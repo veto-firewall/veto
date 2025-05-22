@@ -1,5 +1,5 @@
 import '../popup/popup.css';
-import { Settings, RuleSet } from '../utils/types';
+import { Settings, RuleSet } from '../services/types';
 import { setupUIEvents } from './services/UIEventHandler';
 import { PopupService } from './services/PopupService';
 import { ThemeSwitcher } from './components/ThemeSwitcher';

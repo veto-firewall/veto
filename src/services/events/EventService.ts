@@ -2,8 +2,7 @@
  * EventService handles browser event management
  * Centralizes message handling and web request interception
  */
-import { IService } from '../types';
-import { ExtensionMsg, MsgSaveSettings, MsgSaveRules, MsgExportRules } from '../../utils/types';
+import { IService, ExtensionMsg, MsgSaveSettings, MsgSaveRules, MsgExportRules } from '../types';
 import { setupDeclarativeRules } from '../../utils/rulesDNR';
 import { ServiceFactory } from '../ServiceFactory';
 
