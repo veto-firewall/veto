@@ -7,8 +7,11 @@ type BlockReason = 'ip' | 'asn' | 'geoip' | 'domain' | 'url' | 'regex' | 'privat
 
 /**
  * Returns a user-friendly resource type name
+ * Uses the same resource types as declarativeNetRequest API
  */
-function getReadableResourceType(type?: string): string {
+function getReadableResourceType(
+  type?: browser.declarativeNetRequest.ResourceType | string,
+): string {
   if (!type) return 'unknown';
 
   const typeMap: Record<string, string> = {
@@ -54,7 +57,7 @@ interface RequestLogData {
   location?: string;
   ip?: string;
   asn?: string | number;
-  resourceType?: string;
+  resourceType?: browser.declarativeNetRequest.ResourceType | string;
   blockReason: BlockReason;
 }
 

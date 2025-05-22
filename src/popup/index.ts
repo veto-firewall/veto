@@ -10,7 +10,7 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
-import { getFirefoxRuleLimit } from '../utils/rules';
+import { getFirefoxRuleLimit } from '../utils/rulesDNR';
 
 // Import countries data types for typechecking
 import type {
