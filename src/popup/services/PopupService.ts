@@ -4,6 +4,7 @@
  */
 
 import { Settings, RuleSet } from '../../utils/types';
+import type { LRUCache } from 'lru-cache';
 
 /**
  * Service for popup UI operations
@@ -93,5 +94,28 @@ export class PopupService {
    */
   async clearCache(): Promise<{ success: boolean }> {
     return browser.runtime.sendMessage({ type: 'clearCache' });
+  }
+  
+  /**
+   * Get the country lookup cache
+   * @returns Promise resolving to the country lookup cache
+   */
+  async getCountryLookupCache(): Promise<Record<string, Record<string, Record<string, string>> | Record<string, string>>> {
+    const response = await browser.runtime.sendMessage({ type: 'getCountryLookupCache' });
+    return response || {};
+  }
+  
+  /**
+   * Set a value in the country lookup cache
+   * @param key Cache key
+   * @param value Value to cache
+   * @returns Promise resolving to success status
+   */
+  async setCountryLookupCache(key: string, value: Record<string, Record<string, string>> | Record<string, string>): Promise<{ success: boolean }> {
+    return browser.runtime.sendMessage({
+      type: 'setCountryLookupCache',
+      key,
+      value
+    });
   }
 }

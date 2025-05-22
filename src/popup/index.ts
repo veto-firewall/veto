@@ -1,7 +1,7 @@
 import '../popup/popup.css';
 import { Settings, RuleSet } from '../utils/types';
-import { countryLookupCache } from '../utils/caching';
 import { setupUIEvents } from './services/UIEventHandler';
+import { PopupService } from './services/PopupService';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { Toast } from './components/Toast';
 import {
@@ -298,7 +298,8 @@ async function setupCountryList(): Promise<void> {
 
   // Process countries data and organize by continent
   const countriesByContinent = processCountriesData(countries);
-  countryLookupCache.set('byContinent', countriesByContinent);
+  const popupService = PopupService.getInstance();
+  await popupService.setCountryLookupCache('byContinent', countriesByContinent);
 
   // Create continent groups
   Object.entries(continents).forEach(([continentCode, continentName]) => {
@@ -460,7 +461,7 @@ function handleContinentChange(event: Event): void {
 }
 
 // Handle country checkbox change
-function handleCountryChange(event: Event): void {
+async function handleCountryChange(event: Event): Promise<void> {
   const checkbox = event.target as HTMLInputElement;
   const countryCode = checkbox.dataset.country;
   const continentCode = checkbox.dataset.continent;
@@ -477,20 +478,22 @@ function handleCountryChange(event: Event): void {
 
   // Check if we need to update continent checkbox
   if (continentCode) {
-    updateContinentCheckbox(continentCode);
+    await updateContinentCheckbox(continentCode);
   }
 
   void saveRulesToBackground();
 }
 
 // Update continent checkbox based on country selections
-function updateContinentCheckbox(continentCode: string): void {
+async function updateContinentCheckbox(continentCode: string): Promise<void> {
   const continentCheckbox = document.getElementById(
     `continent-${continentCode}`,
   ) as HTMLInputElement;
   if (!continentCheckbox) return;
 
-  const countriesByContinent = countryLookupCache.get('byContinent') as Record<
+  const popupService = PopupService.getInstance();
+  const cacheData = await popupService.getCountryLookupCache();
+  const countriesByContinent = (cacheData?.byContinent || {}) as Record<
     string,
     Record<string, string>
   >;

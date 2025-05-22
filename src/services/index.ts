@@ -8,3 +8,4 @@ export * from './rule';
 export * from './network';
 export * from './maxmind';
 export * from './events';
+export * from './cache';

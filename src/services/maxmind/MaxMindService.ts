@@ -4,7 +4,7 @@
  */
 import { IService } from '../types';
 import { StorageService } from '../storage/StorageService';
-import { geoIpCache, asnCache } from '../../utils/caching';
+import { ServiceFactory } from '../ServiceFactory';
 import { isValid as _isValid } from 'ipaddr.js';
 // Import types only for TypeScript - Reader will be dynamically imported
 import type { Reader as _Reader } from 'mmdb-lib';
@@ -66,6 +66,11 @@ export class MaxMindService implements IService {
    * MaxMind configuration
    */
   private config: MaxMindConfig | null = null;
+  
+  /**
+   * Cache service for data caching
+   */
+  private cacheService = ServiceFactory.getInstance().getCacheService();
   
   /**
    * Creates a new MaxMind service
@@ -225,8 +230,8 @@ export class MaxMindService implements IService {
       }
 
       // Check cache first
-      if (geoIpCache.has(ip)) {
-        return geoIpCache.get(ip) as string;
+      if (this.cacheService.geoIpCache.has(ip)) {
+        return this.cacheService.geoIpCache.get(ip) as string;
       }
 
       // Load database if needed
@@ -247,7 +252,7 @@ export class MaxMindService implements IService {
       const country = result.country.iso_code;
 
       // Cache the result
-      geoIpCache.set(ip, country);
+      this.cacheService.geoIpCache.set(ip, country);
 
       return country;
     } catch (error) {
@@ -269,8 +274,8 @@ export class MaxMindService implements IService {
       }
 
       // Check cache first
-      if (asnCache.has(ip)) {
-        return asnCache.get(ip) as number;
+      if (this.cacheService.asnCache.has(ip)) {
+        return this.cacheService.asnCache.get(ip) as number;
       }
 
       // Load database if needed
@@ -291,7 +296,7 @@ export class MaxMindService implements IService {
       const asn = result.autonomous_system_number;
 
       // Cache the result
-      asnCache.set(ip, asn);
+      this.cacheService.asnCache.set(ip, asn);
 
       return asn;
     } catch (error) {

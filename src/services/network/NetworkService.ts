@@ -3,13 +3,18 @@
  * Centralizes DNS resolution and IP address handling
  */
 import { IService } from '../types';
-import { dnsCache, ipClassificationCache } from '../../utils/caching';
+import { ServiceFactory } from '../ServiceFactory';
 import { parse, parseCIDR, isValid } from 'ipaddr.js';
 
 /**
  * Service for network operations
  */
 export class NetworkService implements IService {
+  /**
+   * Cache service for DNS and IP caching
+   * @private
+   */
+  private cacheService = ServiceFactory.getInstance().getCacheService();
   /**
    * Initialize the network service
    * @returns Promise that resolves when initialization is complete
@@ -26,8 +31,8 @@ export class NetworkService implements IService {
    * @returns True if the IP is in a private range, false otherwise
    */
   isPrivateIP(ip: string): boolean {
-    if (ipClassificationCache.has(ip)) {
-      return ipClassificationCache.get(ip) as boolean;
+    if (this.cacheService.ipClassificationCache.has(ip)) {
+      return this.cacheService.ipClassificationCache.get(ip) as boolean;
     }
 
     try {
@@ -47,7 +52,7 @@ export class NetworkService implements IService {
         }
       }
 
-      ipClassificationCache.set(ip, isPrivate);
+      this.cacheService.ipClassificationCache.set(ip, isPrivate);
       return isPrivate;
     } catch (error) {
       console.error(`Error checking if ${ip} is private:`, error);
@@ -157,21 +162,21 @@ export class NetworkService implements IService {
     }
 
     // Check DNS cache if we're using it
-    if (useCache && dnsCache.has(domain)) {
-      const cachedIp = dnsCache.get(domain) as string;
+    if (useCache && this.cacheService.dnsCache.has(domain)) {
+      const cachedIp = this.cacheService.dnsCache.get(domain) as string;
       return cachedIp;
     }
 
     // Clear cache if we're explicitly not using it
     if (!useCache) {
-      dnsCache.delete(domain);
+      this.cacheService.dnsCache.delete(domain);
     }
 
     try {
       const result = await browser.dns.resolve(domain);
       if (result && result.addresses && result.addresses.length > 0) {
         const ip = result.addresses[0];
-        dnsCache.set(domain, ip);
+        this.cacheService.dnsCache.set(domain, ip);
         return ip;
       } else {
         console.warn(`DNS resolution for ${domain} returned no addresses`);

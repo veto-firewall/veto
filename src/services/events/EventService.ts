@@ -4,13 +4,16 @@
  */
 import { IService } from '../types';
 import { ExtensionMsg, MsgSaveSettings, MsgSaveRules, MsgExportRules } from '../../utils/types';
-import { StorageService } from '../storage/StorageService';
-import { RuleService } from '../rule/RuleService';
-import { ruleMatchCache, dnsCache, ipClassificationCache, geoIpCache, asnCache } from '../../utils/caching';
 import { setupDeclarativeRules } from '../../utils/rulesDNR';
-import { NetworkService } from '../network/NetworkService';
-import { MaxMindService } from '../maxmind/MaxMindService';
+import { ServiceFactory } from '../ServiceFactory';
 import { logBlockedRequest } from '../../utils/logger';
+
+// Type-only imports for better tree-shaking
+import type { StorageService } from '../storage/StorageService';
+import type { RuleService } from '../rule/RuleService';
+import type { NetworkService } from '../network/NetworkService';
+import type { MaxMindService } from '../maxmind/MaxMindService';
+import type { CacheService } from '../cache/CacheService';
 
 /**
  * Service for managing browser events and messages
@@ -20,6 +23,7 @@ export class EventService implements IService {
   private ruleService: RuleService;
   private networkService: NetworkService;
   private maxmindService: MaxMindService;
+  private cacheService: CacheService;
   
   /**
    * Current settings
@@ -32,22 +36,15 @@ export class EventService implements IService {
   private rules: any;
   
   /**
-   * Creates a new event service
-   * @param storageService - Storage service for persistent data
-   * @param ruleService - Rule service for rule processing
-   * @param networkService - Network service for DNS and IP operations
-   * @param maxmindService - MaxMind service for GeoIP and ASN lookups
+   * Creates a new event service and initializes all dependencies via ServiceFactory
    */
-  constructor(
-    storageService: StorageService,
-    ruleService: RuleService,
-    networkService: NetworkService,
-    maxmindService: MaxMindService
-  ) {
-    this.storageService = storageService;
-    this.ruleService = ruleService;
-    this.networkService = networkService;
-    this.maxmindService = maxmindService;
+  constructor() {
+    const factory = ServiceFactory.getInstance();
+    this.storageService = factory.getStorageService();
+    this.ruleService = factory.getRuleService();
+    this.networkService = factory.getNetworkService();
+    this.maxmindService = factory.getMaxMindService();
+    this.cacheService = factory.getCacheService();
   }
   
   /**
@@ -114,6 +111,26 @@ export class EventService implements IService {
         this.clearAllCaches();
         await setupDeclarativeRules(this.settings, this.rules);
         return { success: true };
+      }
+      
+      case 'getCountryLookupCache': {
+        // Create an object with all key-value pairs from the cache
+        const cacheData: Record<string, Record<string, Record<string, string>> | Record<string, string>> = {};
+        
+        for (const [key, value] of this.cacheService.countryLookupCache.entries()) {
+          cacheData[key] = value;
+        }
+        
+        return cacheData;
+      }
+      
+      case 'setCountryLookupCache': {
+        const msgCache = message as any;
+        if (msgCache.key && msgCache.value) {
+          this.cacheService.countryLookupCache.set(msgCache.key, msgCache.value);
+          return { success: true };
+        }
+        return { success: false, error: 'Invalid cache parameters' };
       }
 
       case 'getRules':
@@ -191,8 +208,8 @@ export class EventService implements IService {
       const cacheKey = `req:${details.url}`;
 
       // Check cache first
-      if (ruleMatchCache.has(cacheKey)) {
-        const shouldBlock = ruleMatchCache.get(cacheKey) as boolean;
+      if (this.cacheService.ruleMatchCache.has(cacheKey)) {
+        const shouldBlock = this.cacheService.ruleMatchCache.get(cacheKey) as boolean;
         if (shouldBlock) {
           // Check if this is a resource-type based block (content blocking)
           // For declarative rules like images, fonts, media
@@ -217,7 +234,7 @@ export class EventService implements IService {
       // Check for private IP blocking
       if (this.settings.blockPrivateIPs) {
         if (await this.networkService.isPrivateHost(url.hostname)) {
-          ruleMatchCache.set(cacheKey, true);
+          this.cacheService.ruleMatchCache.set(cacheKey, true);
 
           // Log the blocked request
           const ip = await this.networkService.resolveDomain(url.hostname);
@@ -238,7 +255,7 @@ export class EventService implements IService {
         url,
         cacheKey,
         this.rules,
-        (key: string, value: boolean) => ruleMatchCache.set(key, value),
+        (key: string, value: boolean) => this.cacheService.ruleMatchCache.set(key, value),
         details
       );
       
@@ -247,7 +264,7 @@ export class EventService implements IService {
       }
 
       // No block rules matched
-      ruleMatchCache.set(cacheKey, false);
+      this.cacheService.ruleMatchCache.set(cacheKey, false);
       return { cancel: false };
     } catch (error) {
       console.error('Error in handleBeforeRequest:', error);
@@ -259,10 +276,6 @@ export class EventService implements IService {
    * Clear all caches
    */
   private clearAllCaches(): void {
-    ruleMatchCache.clear();
-    dnsCache.clear();
-    ipClassificationCache.clear();
-    geoIpCache.clear();
-    asnCache.clear();
+    this.cacheService.clearAll();
   }
 }

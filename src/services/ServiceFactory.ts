@@ -8,6 +8,7 @@ import { RuleService } from './rule';
 import { NetworkService } from './network';
 import { MaxMindService } from './maxmind';
 import { EventService } from './events';
+import { CacheService } from './cache';
 
 /**
  * Factory for creating and initializing services
@@ -145,17 +146,7 @@ export class ServiceFactory {
     const key = 'event';
     
     if (!this.services.has(key)) {
-      const storageService = this.getStorageService();
-      const ruleService = this.getRuleService();
-      const networkService = this.getNetworkService();
-      const maxmindService = this.getMaxMindService();
-      
-      const service = new EventService(
-        storageService,
-        ruleService,
-        networkService,
-        maxmindService
-      );
+      const service = new EventService();
       
       this.services.set(key, service);
       
@@ -173,6 +164,30 @@ export class ServiceFactory {
   }
   
   /**
+   * Get or create a cache service
+   * @returns Cache service instance
+   */
+  public getCacheService(): CacheService {
+    const key = 'cache';
+    
+    if (!this.services.has(key)) {
+      const service = new CacheService();
+      this.services.set(key, service);
+      
+      // Auto-initialize
+      if (document.readyState === 'complete') {
+        service.initialize().catch(err => console.error('Failed to initialize CacheService:', err));
+      } else {
+        window.addEventListener('load', () => {
+          service.initialize().catch(err => console.error('Failed to initialize CacheService:', err));
+        });
+      }
+    }
+    
+    return this.services.get(key) as CacheService;
+  }
+  
+  /**
    * Initialize all services
    * @returns Promise that resolves when all services are initialized
    */
@@ -183,6 +198,7 @@ export class ServiceFactory {
     this.getNetworkService();
     this.getMaxMindService();
     this.getEventService();
+    this.getCacheService();
     
     // Initialize all services in proper order
     const initPromises = Array.from(this.services.values()).map(service => service.initialize());

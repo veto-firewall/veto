@@ -83,13 +83,25 @@ export interface MsgClearCache extends MessageBase {
   type: 'clearCache';
 }
 
+export interface MsgGetCountryLookupCache extends MessageBase {
+  type: 'getCountryLookupCache';
+}
+
+export interface MsgSetCountryLookupCache extends MessageBase {
+  type: 'setCountryLookupCache';
+  key: string;
+  value: Record<string, Record<string, string>> | Record<string, string>;
+}
+
 export type ExtensionMsg =
   | MsgGetSettings
   | MsgSaveSettings
   | MsgGetRules
   | MsgSaveRules
   | MsgExportRules
-  | MsgClearCache;
+  | MsgClearCache
+  | MsgGetCountryLookupCache
+  | MsgSetCountryLookupCache;
 
 export type MsgResponse<T extends ExtensionMsg> = T extends MsgGetSettings
   ? Settings
@@ -103,4 +115,8 @@ export type MsgResponse<T extends ExtensionMsg> = T extends MsgGetSettings
           ? string
           : T extends MsgClearCache
             ? { success: boolean }
-            : never;
+            : T extends MsgGetCountryLookupCache
+              ? Record<string, Record<string, Record<string, string>> | Record<string, string>>
+              : T extends MsgSetCountryLookupCache
+                ? { success: boolean }
+                : never;
