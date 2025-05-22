@@ -3,7 +3,6 @@
  */
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import { RuleSet } from '../../../utils/types';
-import { resolveDomain } from '../../../utils/dns';
 import { ServiceFactory } from '../../ServiceFactory';
 
 /**
@@ -42,7 +41,7 @@ export class IpRuleProcessor extends BaseRuleProcessor {
       return null;
     }
 
-    const ip = await resolveDomain(url.hostname);
+    const ip = await this.networkService.resolveDomain(url.hostname);
     if (!ip) {
       return null;
     }

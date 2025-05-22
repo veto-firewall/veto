@@ -1,7 +1,6 @@
 import { isFQDN, isURL, isIP, isInt } from 'validator';
 import { Rule, RuleType, RuleAction, RuleSet } from './types';
 import { getFirefoxRuleLimit } from './rulesDNR';
-import { resolveDomain } from './dns';
 import { ServiceFactory } from '../services';
 import { logBlockedRequest } from './logger';
 
@@ -202,13 +201,13 @@ export async function processIpRules(
     return null;
   }
 
-  const ip = await resolveDomain(url.hostname);
+  // Get network service for IP and DNS functionality
+  const networkService = ServiceFactory.getInstance().getNetworkService();
+  
+  const ip = await networkService.resolveDomain(url.hostname);
   if (!ip) {
     return null;
   }
-
-  // Get network service to use its IP matching functionality
-  const networkService = ServiceFactory.getInstance().getNetworkService();
   
   // First, find any matching allowed IP rule
   const allowedRule = rules.allowedIps.find(
@@ -274,7 +273,8 @@ export async function processAsnRules(
     return null;
   }
 
-  const ip = await resolveDomain(url.hostname);
+  const networkService = ServiceFactory.getInstance().getNetworkService();
+  const ip = await networkService.resolveDomain(url.hostname);
   if (!ip) {
     void console.log(`Could not resolve IP for ${url.hostname}`);
     return null;
@@ -351,7 +351,8 @@ export async function processGeoIpRules(
     return null;
   }
 
-  const ip = await resolveDomain(url.hostname);
+  const networkService = ServiceFactory.getInstance().getNetworkService();
+  const ip = await networkService.resolveDomain(url.hostname);
   if (!ip) {
     void console.log(`Could not resolve IP for ${url.hostname}`);
     return null;

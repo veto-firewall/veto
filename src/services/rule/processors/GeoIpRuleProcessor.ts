@@ -3,7 +3,6 @@
  */
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import { RuleSet } from '../../../utils/types';
-import { resolveDomain } from '../../../utils/dns';
 import { ServiceFactory } from '../../ServiceFactory';
 
 /**
@@ -15,6 +14,12 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
    * @private
    */
   private maxmindService;
+  
+  /**
+   * Network service for domain resolution
+   * @private
+   */
+  private networkService;
 
   /**
    * Creates a new GeoIP rule processor
@@ -23,7 +28,9 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
    */
   constructor(rules: RuleSet, cacheCallback: CacheCallback) {
     super(rules, cacheCallback);
-    this.maxmindService = ServiceFactory.getInstance().getMaxMindService();
+    const serviceFactory = ServiceFactory.getInstance();
+    this.maxmindService = serviceFactory.getMaxMindService();
+    this.networkService = serviceFactory.getNetworkService();
   }
   
   /**
@@ -42,7 +49,7 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
       return null;
     }
 
-    const ip = await resolveDomain(url.hostname);
+    const ip = await this.networkService.resolveDomain(url.hostname);
     if (!ip) {
       console.log(`Could not resolve IP for ${url.hostname}`);
       return null;

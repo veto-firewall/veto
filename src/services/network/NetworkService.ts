@@ -3,7 +3,6 @@
  * Centralizes DNS resolution and IP address handling
  */
 import { IService } from '../types';
-import { resolveDomain } from '../../utils/dns';
 import { dnsCache, ipClassificationCache } from '../../utils/caching';
 import { parse, parseCIDR, isValid } from 'ipaddr.js';
 
@@ -129,8 +128,8 @@ export class NetworkService implements IService {
 
     // For domain names, resolve to IP first
     try {
-      dnsCache.delete(hostname); // Clear the cache to ensure fresh resolution
-      const ip = await resolveDomain(hostname);
+      // Use resolveDomain with useCache=false to ensure fresh resolution
+      const ip = await this.resolveDomain(hostname, false);
       if (ip) {
         return this.isPrivateIP(ip);
       }
@@ -148,10 +147,39 @@ export class NetworkService implements IService {
    * @returns Promise resolving to IP address or null
    */
   async resolveDomain(domain: string, useCache: boolean = true): Promise<string | null> {
+    // If domain is already an IP address, return it directly
+    try {
+      if (isValid(domain)) {
+        return domain;
+      }
+    } catch (error) {
+      console.error(`Error checking if ${domain} is a valid IP:`, error);
+    }
+
+    // Check DNS cache if we're using it
+    if (useCache && dnsCache.has(domain)) {
+      const cachedIp = dnsCache.get(domain) as string;
+      return cachedIp;
+    }
+
+    // Clear cache if we're explicitly not using it
     if (!useCache) {
       dnsCache.delete(domain);
     }
-    
-    return resolveDomain(domain);
+
+    try {
+      const result = await browser.dns.resolve(domain);
+      if (result && result.addresses && result.addresses.length > 0) {
+        const ip = result.addresses[0];
+        dnsCache.set(domain, ip);
+        return ip;
+      } else {
+        console.warn(`DNS resolution for ${domain} returned no addresses`);
+      }
+    } catch (e) {
+      console.error(`DNS resolution failed for ${domain}:`, e);
+    }
+
+    return null;
   }
 }
