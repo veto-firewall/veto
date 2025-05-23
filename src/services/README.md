@@ -62,7 +62,7 @@ Rule processors handle specific types of rules:
 Services should be accessed through the ServiceFactory:
 
 ```typescript
-import { ServiceFactory } from '../services';
+import { ServiceFactory } from '../services/ServiceFactory';
 
 // Get a service instance
 const storageService = ServiceFactory.getInstance().getStorageService();

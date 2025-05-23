@@ -2,7 +2,7 @@
  * RuleService handles all rule-related operations
  * Centralizes rule processing, validation, and management
  */
-import { IRuleService, RuleSet, Rule, RuleType, RuleAction } from '../types';
+import type { IRuleService, RuleSet, Rule, RuleType, RuleAction } from '../types';
 import { StorageService } from '../storage/StorageService';
 import { isFQDN, isURL, isIP, isInt } from 'validator';
 import { ServiceFactory } from '../ServiceFactory';

@@ -3,7 +3,7 @@
  * Handles HTTP redirect/block and resource type blocking
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
-import { Settings } from '../../types';
+import type { Settings } from '../../types';
 
 /**
  * Handles creation of basic declarative network rules

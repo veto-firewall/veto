@@ -2,7 +2,7 @@
  * Processor for tracking parameter removal rules
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
-import { RuleSet } from '../../types';
+import type { RuleSet } from '../../types';
 
 /**
  * Handles creation of tracking parameter removal rules

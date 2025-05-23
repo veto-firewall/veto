@@ -2,7 +2,7 @@
  * Processor for domain and URL-based declarative rules
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
-import { Rule } from '../../types';
+import type { Rule } from '../../types';
 
 /**
  * Handles creation of domain and URL-based declarative network rules

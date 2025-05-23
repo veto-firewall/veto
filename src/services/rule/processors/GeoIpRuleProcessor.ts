@@ -2,7 +2,7 @@
  * Processor for GeoIP-based rules
  */
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
-import { RuleSet } from '../../types';
+import type { RuleSet } from '../../types';
 import { ServiceFactory } from '../../ServiceFactory';
 
 /**

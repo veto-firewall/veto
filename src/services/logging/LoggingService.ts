@@ -2,7 +2,7 @@
  * LoggingService provides centralized logging functionality for the extension
  * Handles console logging for blocked requests and other events
  */
-import { IService } from '../types';
+import type { IService } from '../types';
 
 /**
  * Block reason types for request blocking

@@ -2,7 +2,7 @@
  * CacheService provides centralized cache management for the application
  * Manages various LRU caches for different types of data
  */
-import { IService } from '../types';
+import type { IService } from '../types';
 import { LRUCache } from 'lru-cache';
 
 /**

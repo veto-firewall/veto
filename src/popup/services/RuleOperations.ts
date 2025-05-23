@@ -1,4 +1,4 @@
-import { Rule, RuleSet } from '../../services/types';
+import type { Rule, RuleSet } from '../../services/types';
 import { ServiceFactory } from '../../services/ServiceFactory';
 
 /**

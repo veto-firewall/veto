@@ -2,13 +2,15 @@
  * DeclarativeRuleService handles all browser declarativeNetRequest operations
  * Creates and manages declarative network request rules for content filtering
  */
-import { IDeclarativeRuleService, IService, RuleSet, Settings } from '../types';
+import type { IDeclarativeRuleService, IService, RuleSet, Settings } from '../types';
 import { StorageService } from '../storage/StorageService';
 import { ServiceFactory } from '../ServiceFactory';
-import { BasicRuleProcessor } from './processors/BasicRuleProcessor';
-import { DomainRuleProcessor } from './processors/DomainRuleProcessor';
-import { TrackingParamProcessor } from './processors/TrackingParamProcessor';
-import { RegexRuleProcessor } from './processors/RegexRuleProcessor';
+import { 
+  BasicRuleProcessor,
+  DomainRuleProcessor,
+  TrackingParamProcessor,
+  RegexRuleProcessor
+} from './processors';
 
 /**
  * Special dynamic rule ID to use for the temporary suspend rule

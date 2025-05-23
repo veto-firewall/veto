@@ -2,8 +2,8 @@
  * Message type definitions for extension communication
  */
 
-import { Settings } from './settingsTypes';
-import { RuleSet } from './ruleTypes';
+import type { Settings } from './settingsTypes';
+import type { RuleSet } from './ruleTypes';
 
 /**
  * Base message interface

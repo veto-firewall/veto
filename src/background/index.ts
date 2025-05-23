@@ -3,7 +3,7 @@
  * Background script for the Veto extension
  * Main entry point that initializes the extension using the service architecture
  */
-import { ServiceFactory } from '../services';
+import { ServiceFactory } from '../services/ServiceFactory';
 
 /**
  * Export the service factory for use by other modules

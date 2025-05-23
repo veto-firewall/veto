@@ -1,5 +1,5 @@
 import '../popup/popup.css';
-import { Settings, RuleSet } from '../services/types';
+import type { Settings, RuleSet } from '../services/types';
 import { setupUIEvents } from './services/UIEventHandler';
 import { PopupService } from './services/PopupService';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
@@ -10,7 +10,7 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
-import { ServiceFactory } from '../services';
+import { ServiceFactory } from '../services/ServiceFactory';
 
 // Import countries data types for typechecking
 import type {

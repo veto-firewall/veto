@@ -2,7 +2,7 @@
  * MaxMindService handles all operations related to MaxMind GeoIP databases
  * Manages downloading, loading, and querying MaxMind GeoLite2 databases
  */
-import { IService } from '../types';
+import type { IService } from '../types';
 import { StorageService } from '../storage/StorageService';
 import { ServiceFactory } from '../ServiceFactory';
 import { isValid as _isValid } from 'ipaddr.js';

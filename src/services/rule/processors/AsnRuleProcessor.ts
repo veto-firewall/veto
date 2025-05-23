@@ -2,7 +2,7 @@
  * Processor for ASN-based rules
  */
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
-import { RuleSet, Rule } from '../../types';
+import type { RuleSet, Rule } from '../../types';
 import { ServiceFactory } from '../../ServiceFactory';
 
 /**

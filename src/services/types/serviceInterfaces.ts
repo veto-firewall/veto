@@ -56,8 +56,8 @@ export interface IStorageService extends IService {
 }
 
 // Import dependency types
-import { RuleSet } from './ruleTypes';
-import { Settings } from './settingsTypes';
+import type { RuleSet } from './ruleTypes';
+import type { Settings } from './settingsTypes';
 
 /**
  * Interface for declarative network request rule operations

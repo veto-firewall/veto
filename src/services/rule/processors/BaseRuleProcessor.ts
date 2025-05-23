@@ -2,7 +2,7 @@
  * Base class for rule processors that handle different rule types
  * Provides common functionality for rule processing
  */
-import { RuleSet } from '../../types';
+import type { RuleSet } from '../../types';
 import { ServiceFactory } from '../../ServiceFactory';
 import type { LoggingService, BlockReason, RequestLogData } from '../../logging/LoggingService';
 

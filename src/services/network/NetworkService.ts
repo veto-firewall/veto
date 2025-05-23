@@ -2,7 +2,7 @@
  * NetworkService handles network-related operations
  * Centralizes DNS resolution and IP address handling
  */
-import { IService } from '../types';
+import type { IService } from '../types';
 import { ServiceFactory } from '../ServiceFactory';
 import { parse, parseCIDR, isValid } from 'ipaddr.js';
 
