@@ -5,7 +5,7 @@
 import { IRuleService, RuleSet, Rule, RuleType, RuleAction } from '../types';
 import { StorageService } from '../storage/StorageService';
 import { isFQDN, isURL, isIP, isInt } from 'validator';
-import { getFirefoxRuleLimit } from '../../utils/rulesDNR';
+import { ServiceFactory } from '../ServiceFactory';
 import { BaseRuleProcessor } from './processors/BaseRuleProcessor';
 import { IpRuleProcessor } from './processors/IpRuleProcessor';
 import { AsnRuleProcessor } from './processors/AsnRuleProcessor';
@@ -46,7 +46,8 @@ export class RuleService implements IRuleService {
   async initialize(): Promise<void> {
     // Initialize rule ID counter
     if (this.ruleId === null) {
-      this.ruleId = getFirefoxRuleLimit() + 1;
+      const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+      this.ruleId = declarativeRuleService.getRuleLimit() + 1;
     }
     
     return Promise.resolve();
@@ -92,9 +93,10 @@ export class RuleService implements IRuleService {
   generateRuleId(): string {
     // Initialize the ID counter if not already done
     if (this.ruleId === null) {
-      this.ruleId = getFirefoxRuleLimit() + 1;
+      const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+      this.ruleId = declarativeRuleService.getRuleLimit() + 1;
     }
-    return (this.ruleId++).toString();
+    return (this.ruleId as number).toString();
   }
   
   /**

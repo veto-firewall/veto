@@ -13,3 +13,4 @@ export * from './maxmind';
 export * from './events';
 export * from './cache';
 export * from './logging';
+export * from './declarative-rules';

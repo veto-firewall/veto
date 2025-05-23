@@ -10,7 +10,7 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
-import { getFirefoxRuleLimit } from '../utils/rulesDNR';
+import { ServiceFactory } from '../services';
 
 // Import countries data types for typechecking
 import type {
@@ -30,7 +30,7 @@ const toast = new Toast();
 async function updateRuleCount(): Promise<void> {
   const result = await browser.storage.local.get('ruleCount');
   const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
-  const ruleLimit = getFirefoxRuleLimit();
+  const ruleLimit = ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit();
 
   // Update rule count element
   const ruleCountElement = document.getElementById('rule-count');
@@ -565,7 +565,7 @@ async function saveRulesToBackground(): Promise<void> {
     const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
 
     if (ruleCount > 4500) {
-      toast.show(`Warning: Using ${ruleCount}/${getFirefoxRuleLimit()} rules`, 'info');
+      toast.show(`Warning: Using ${ruleCount}/${ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit()} rules`, 'info');
     }
   } catch (error) {
     void error;

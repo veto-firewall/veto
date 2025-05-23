@@ -57,3 +57,29 @@ export interface IStorageService extends IService {
 
 // Import dependency types
 import { RuleSet } from './ruleTypes';
+import { Settings } from './settingsTypes';
+
+/**
+ * Interface for declarative network request rule operations
+ */
+export interface IDeclarativeRuleService extends IService {
+  /**
+   * Set up declarative network request rules in the browser
+   * @param settings - The extension settings
+   * @param rules - The ruleset containing filtering rules
+   * @returns Promise that resolves when rules are set up
+   */
+  setupRules(settings: Settings, rules: RuleSet): Promise<void>;
+
+  /**
+   * Get the current rule count
+   * @returns The number of active rules
+   */
+  getRuleCount(): number;
+  
+  /**
+   * Get the maximum number of rules allowed by Firefox
+   * @returns The rule limit
+   */
+  getRuleLimit(): number;
+}

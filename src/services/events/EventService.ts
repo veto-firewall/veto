@@ -3,7 +3,6 @@
  * Centralizes message handling and web request interception
  */
 import { IService, ExtensionMsg, MsgSaveSettings, MsgSaveRules, MsgExportRules } from '../types';
-import { setupDeclarativeRules } from '../../utils/rulesDNR';
 import { ServiceFactory } from '../ServiceFactory';
 
 // Type-only imports for better tree-shaking
@@ -111,7 +110,8 @@ export class EventService implements IService {
         this.settings = msgSaveSettings.settings;
         await this.storageService.saveSettings(this.settings);
         this.clearAllCaches();
-        await setupDeclarativeRules(this.settings, this.rules);
+        const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+        await declarativeRuleService.setupRules(this.settings, this.rules);
         return { success: true };
       }
       
@@ -157,7 +157,8 @@ export class EventService implements IService {
         this.clearAllCaches();
         console.log('Caches cleared after rule update');
 
-        await setupDeclarativeRules(this.settings, this.rules);
+        const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+        await declarativeRuleService.setupRules(this.settings, this.rules);
         return { success: true };
       }
 

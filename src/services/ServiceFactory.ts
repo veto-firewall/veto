@@ -10,6 +10,7 @@ import { MaxMindService } from './maxmind';
 import { EventService } from './events';
 import { CacheService } from './cache';
 import { LoggingService } from './logging';
+import { DeclarativeRuleService } from './declarative-rules';
 
 /**
  * Factory for creating and initializing services
@@ -215,6 +216,32 @@ export class ServiceFactory {
   }
   
   /**
+   * Get or create a declarative rule service
+   * @returns Declarative rule service instance
+   */
+  public getDeclarativeRuleService(): DeclarativeRuleService {
+    const key = 'declarativeRule';
+    
+    if (!this.services.has(key)) {
+      const storageService = this.getStorageService();
+      const service = new DeclarativeRuleService(storageService);
+      
+      this.services.set(key, service);
+      
+      // Auto-initialize
+      if (document.readyState === 'complete') {
+        service.initialize().catch(err => console.error('Failed to initialize DeclarativeRuleService:', err));
+      } else {
+        window.addEventListener('load', () => {
+          service.initialize().catch(err => console.error('Failed to initialize DeclarativeRuleService:', err));
+        });
+      }
+    }
+    
+    return this.services.get(key) as DeclarativeRuleService;
+  }
+  
+  /**
    * Initialize all services
    * @returns Promise that resolves when all services are initialized
    */
@@ -227,6 +254,7 @@ export class ServiceFactory {
     this.getEventService();
     this.getCacheService();
     this.getLoggingService();
+    this.getDeclarativeRuleService();
     
     // Initialize all services in proper order
     const initPromises = Array.from(this.services.values()).map(service => service.initialize());
