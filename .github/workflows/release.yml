@@ -15,11 +15,12 @@ on:
       channel:
         description: 'Distribution channel for Mozilla Add-ons'
         required: true
-        default: 'unlisted'
+        default: 'do-not-publish'
         type: choice
         options:
           - listed
           - unlisted
+          - do-not-publish
 
 permissions:
   contents: write
@@ -67,11 +68,21 @@ jobs:
           git commit -m "Release ${NEW_VERSION}"
           git push origin main
 
+      - name: Create a directory for release assets
+        run: |
+          RELEASE_ASSETS_DIR_PATH=$(pwd)/release-assets
+          mkdir -p ${RELEASE_ASSETS_DIR_PATH}
+          echo "RELEASE_ASSETS_DIR_PATH=${RELEASE_ASSETS_DIR_PATH}" >> $GITHUB_ENV
+
+      - name: Create source code package
+        run: |
+          git archive --format=zip --output=${RELEASE_ASSETS_DIR_PATH}/source-${NEW_VERSION}.zip HEAD
+
       - name: Create extension package
         run: |
           cd dist
           zip -r veto.zip *
-          mv veto.zip ../veto-${NEW_VERSION}.zip
+          mv veto.zip ${RELEASE_ASSETS_DIR_PATH}/veto-${NEW_VERSION}.zip
           cd ..
 
       - name: Install web-ext
@@ -79,6 +90,7 @@ jobs:
           npm install -g web-ext
 
       - name: Sign extension
+        if: ${{ github.event.inputs.channel != 'do-not-publish' }}
         env:
           WEB_EXT_API_KEY: ${{ secrets.MOZILLA_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
@@ -90,10 +102,11 @@ jobs:
             --source-dir=dist/ \
             --artifacts-dir=./signed-artifacts
           SIGNED_XPI_PATH=$(find ./signed-artifacts -name "*.xpi" | head -n 1)
-          cp "${SIGNED_XPI_PATH}" ./veto-${NEW_VERSION}-signed.xpi
+          cp "${SIGNED_XPI_PATH}" ${RELEASE_ASSETS_DIR_PATH}/veto-${NEW_VERSION}-signed.xpi
 
       - name: Calculate checksums
         run: |
+          cd ${RELEASE_ASSETS_DIR_PATH}
           echo "## SHA256 Checksums" >> checksums.txt
           echo "### Extension Package" >> checksums.txt
           EXT_CHECKSUM=$(sha256sum veto-${NEW_VERSION}.zip | awk '{print $1}')
@@ -101,15 +114,19 @@ jobs:
           echo "EXT_CHECKSUM=${EXT_CHECKSUM}" >> $GITHUB_ENV
           
           echo "### Source Code" >> checksums.txt
-          git archive --format=zip --output=source-${NEW_VERSION}.zip HEAD
           SRC_CHECKSUM=$(sha256sum source-${NEW_VERSION}.zip | awk '{print $1}')
           echo "source-${NEW_VERSION}.zip: ${SRC_CHECKSUM}" | tee -a checksums.txt
           echo "SRC_CHECKSUM=${SRC_CHECKSUM}" >> $GITHUB_ENV
           
-          echo "### Signed Extension" >> checksums.txt
-          SIGNED_CHECKSUM=$(sha256sum veto-${NEW_VERSION}-signed.xpi | awk '{print $1}')
-          echo "veto-${NEW_VERSION}-signed.xpi: ${SIGNED_CHECKSUM}" | tee -a checksums.txt
-          echo "SIGNED_CHECKSUM=${SIGNED_CHECKSUM}" >> $GITHUB_ENV
+          # Only calculate signed XPI checksum if extension was published
+          if [ "${{ github.event.inputs.channel }}" != "do-not-publish" ]; then
+            echo "### Signed Extension" >> checksums.txt
+            SIGNED_CHECKSUM=$(sha256sum veto-${NEW_VERSION}-signed.xpi | awk '{print $1}')
+            echo "veto-${NEW_VERSION}-signed.xpi: ${SIGNED_CHECKSUM}" | tee -a checksums.txt
+            echo "SIGNED_CHECKSUM=${SIGNED_CHECKSUM}" >> $GITHUB_ENV
+          else
+            echo "SIGNED_CHECKSUM=not published" >> $GITHUB_ENV
+          fi
 
       - name: Create GitHub Release
         env:
@@ -130,7 +147,4 @@ jobs:
           gh release create v${NEW_VERSION} \
             --title "VETO v${NEW_VERSION}" \
             --notes-file release_notes.md \
-            ./veto-${NEW_VERSION}.zip \
-            ./source-${NEW_VERSION}.zip \
-            ./veto-${NEW_VERSION}-signed.xpi \
-            ./checksums.txt
+            ${RELEASE_ASSETS_DIR_PATH}/*
