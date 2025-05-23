@@ -11,15 +11,12 @@ import type { Settings } from '../../types';
 export class BasicRuleProcessor extends BaseProcessor {
   /**
    * Creates basic rules for HTTP handling and resource blocking
-   * 
+   *
    * @param settings - The extension settings
    * @param startId - The starting ID for rule generation
    * @returns Array of declarative network request rules
    */
-  createRules(
-    settings: Settings,
-    startId: number = 10,
-  ): browser.declarativeNetRequest.Rule[] {
+  createRules(settings: Settings, startId: number = 10): browser.declarativeNetRequest.Rule[] {
     const basicRules: browser.declarativeNetRequest.Rule[] = [];
     let ruleId = startId;
 

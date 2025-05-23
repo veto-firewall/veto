@@ -92,8 +92,8 @@ export default [
       'complexity': ['warn', 21],
       'max-depth': ['warn', 4],
       'max-lines': ['warn', 600],
-      'max-lines-per-function': ['warn', 145],
-      'max-params': ['warn', 5], // Limit number of parameters
+      'max-lines-per-function': ['warn', 120],
+      'max-params': ['warn', 5],
       'max-nested-callbacks': ['warn', 3],
       
       // === Style & Formatting ===

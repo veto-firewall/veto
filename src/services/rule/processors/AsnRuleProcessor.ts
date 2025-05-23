@@ -14,7 +14,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
    * @private
    */
   private maxmindService;
-  
+
   /**
    * Network service for domain resolution
    * @private
@@ -32,7 +32,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
     this.maxmindService = serviceFactory.getMaxMindService();
     this.networkService = serviceFactory.getNetworkService();
   }
-  
+
   /**
    * Process ASN rules for a URL
    * @param url - URL to process rules for
@@ -43,7 +43,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
   async process(
     url: URL,
     cacheKey: string,
-    details?: browser.webRequest._OnBeforeRequestDetails
+    details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null> {
     if (this.rules.blockedAsns.length === 0 && this.rules.allowedAsns.length === 0) {
       return null;
@@ -96,7 +96,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
 
     return null;
   }
-  
+
   /**
    * Find a matching ASN allow rule
    * @param asn - The ASN to check
@@ -112,7 +112,7 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
       return matches;
     });
   }
-  
+
   /**
    * Find a matching ASN block rule
    * @param asn - The ASN to check

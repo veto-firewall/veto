@@ -24,7 +24,7 @@ export class IpRuleProcessor extends BaseRuleProcessor {
     super(rules, cacheCallback);
     this.networkService = ServiceFactory.getInstance().getNetworkService();
   }
-  
+
   /**
    * Process IP rules for a URL
    * @param url - URL to process rules for
@@ -35,7 +35,7 @@ export class IpRuleProcessor extends BaseRuleProcessor {
   async process(
     url: URL,
     cacheKey: string,
-    details?: browser.webRequest._OnBeforeRequestDetails
+    details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null> {
     if (this.rules.blockedIps.length === 0 && this.rules.allowedIps.length === 0) {
       return null;
@@ -48,7 +48,7 @@ export class IpRuleProcessor extends BaseRuleProcessor {
 
     // First, find any matching allowed IP rule
     const allowedRule = this.rules.allowedIps.find(
-      rule => rule.enabled && this.networkService.ipMatchesRange(ip, rule.value)
+      rule => rule.enabled && this.networkService.ipMatchesRange(ip, rule.value),
     );
 
     // Check if there's a terminating allow rule - these take highest precedence
@@ -60,9 +60,9 @@ export class IpRuleProcessor extends BaseRuleProcessor {
 
     // Then check for blocked IPs - block rules always override non-terminating allow rules
     const blockedRule = this.rules.blockedIps.find(
-      rule => rule.enabled && this.networkService.ipMatchesRange(ip, rule.value)
+      rule => rule.enabled && this.networkService.ipMatchesRange(ip, rule.value),
     );
-    
+
     if (blockedRule) {
       console.log(`IP ${ip} matched block rule: ${blockedRule.value}`);
       this.cacheCallback(cacheKey, true);

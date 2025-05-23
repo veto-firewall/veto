@@ -17,7 +17,7 @@ import type { Readable } from 'stream';
  */
 export interface MaxMindServiceSettings {
   maxmind: MaxMindConfig;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -51,27 +51,27 @@ export class MaxMindService implements IService {
    * Storage service for persistent data
    */
   private storageService: StorageService;
-  
+
   /**
    * GeoIP database reader
    */
   private geoIpReader: ReaderInstance<CountryResponse> | null = null;
-  
+
   /**
    * ASN database reader
    */
   private asnReader: ReaderInstance<AsnResponse> | null = null;
-  
+
   /**
    * MaxMind configuration
    */
   private config: MaxMindConfig | null = null;
-  
+
   /**
    * Cache service for data caching
    */
   private cacheService = ServiceFactory.getInstance().getCacheService();
-  
+
   /**
    * Creates a new MaxMind service
    * @param storageService - Storage service for persistent data
@@ -79,7 +79,7 @@ export class MaxMindService implements IService {
   constructor(storageService: StorageService) {
     this.storageService = storageService;
   }
-  
+
   /**
    * Initialize the MaxMind service
    * @returns Promise that resolves when initialization is complete
@@ -87,37 +87,28 @@ export class MaxMindService implements IService {
   async initialize(): Promise<void> {
     // Get MaxMind configuration from settings
     const settings = await this.storageService.getSettings<MaxMindServiceSettings>();
-    
+
     if (settings && settings.maxmind) {
       this.config = settings.maxmind;
-      
+
       // Load databases if license key is available
       if (this.config && this.config.licenseKey) {
         const now = Date.now();
         const lastDownload = this.config.lastDownload || 0;
         const oneMonth = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
-        
+
         if (now - lastDownload > oneMonth) {
           await this.downloadDatabases();
-          
+
           // Update the last download timestamp
-          if (this.config) {
-            this.config.lastDownload = now;
-            if (settings) {
-              settings.maxmind = this.config;
-              await this.storageService.saveSettings<MaxMindServiceSettings>(settings);
-            }
-          }
+          await this.updateLastDownloadTimestamp(now, settings);
         } else {
-          await Promise.all([
-            this.loadGeoIpDatabase(),
-            this.loadAsnDatabase()
-          ]);
+          await Promise.all([this.loadGeoIpDatabase(), this.loadAsnDatabase()]);
         }
       }
     }
   }
-  
+
   /**
    * Get the MaxMind configuration
    * @returns The current MaxMind configuration
@@ -125,28 +116,28 @@ export class MaxMindService implements IService {
   getConfig(): MaxMindConfig | null {
     return this.config;
   }
-  
+
   /**
    * Update the MaxMind configuration
    * @param config - New configuration
    */
   async updateConfig(config: MaxMindConfig): Promise<boolean> {
     this.config = config;
-    
+
     // Update settings
     const settings = await this.storageService.getSettings<MaxMindServiceSettings>();
     if (settings) {
       settings.maxmind = config;
       return this.storageService.saveSettings<MaxMindServiceSettings>(settings);
     }
-    
+
     // If no settings exist yet, create them
     const newSettings: MaxMindServiceSettings = {
-      maxmind: config
+      maxmind: config,
     };
     return this.storageService.saveSettings<MaxMindServiceSettings>(newSettings);
   }
-  
+
   /**
    * Load the GeoIP database from storage into memory
    * @returns Promise resolving to true if successful
@@ -181,7 +172,7 @@ export class MaxMindService implements IService {
       return false;
     }
   }
-  
+
   /**
    * Load the ASN database from storage into memory
    * @returns Promise resolving to true if successful
@@ -216,7 +207,7 @@ export class MaxMindService implements IService {
       return false;
     }
   }
-  
+
   /**
    * Look up a country by IP address
    * @param ip - IP address to look up
@@ -260,7 +251,7 @@ export class MaxMindService implements IService {
       return null;
     }
   }
-  
+
   /**
    * Look up an ASN by IP address
    * @param ip - IP address to look up
@@ -304,7 +295,7 @@ export class MaxMindService implements IService {
       return null;
     }
   }
-  
+
   /**
    * Download MaxMind GeoLite2 databases
    * @returns Promise resolving to true if successful
@@ -407,7 +398,7 @@ export class MaxMindService implements IService {
       return false;
     }
   }
-  
+
   /**
    * Extract MMDB file from a tar.gz archive
    * @param arrayBuffer - Compressed tar.gz archive
@@ -448,7 +439,7 @@ export class MaxMindService implements IService {
       return null;
     }
   }
-  
+
   /**
    * Extract files from a tar archive stream
    * @param tar - Tar stream library
@@ -522,7 +513,7 @@ export class MaxMindService implements IService {
 
     return extractionPromise;
   }
-  
+
   /**
    * Select the appropriate MMDB file based on database type
    * @param files - Array of extracted files
@@ -534,7 +525,9 @@ export class MaxMindService implements IService {
     let selectedFile = files[0];
 
     if (databaseType) {
-      const matchingFile = files.find(f => f.name.toLowerCase().includes(databaseType.toLowerCase()));
+      const matchingFile = files.find(f =>
+        f.name.toLowerCase().includes(databaseType.toLowerCase()),
+      );
 
       if (matchingFile) {
         selectedFile = matchingFile;
@@ -542,5 +535,28 @@ export class MaxMindService implements IService {
     }
 
     return selectedFile;
+  }
+
+  /**
+   * Update the last download timestamp in the settings
+   * @param timestamp - The timestamp to set
+   * @param settings - The current settings object
+   */
+  private async updateLastDownloadTimestamp(
+    timestamp: number,
+    settings: MaxMindServiceSettings | null,
+  ): Promise<void> {
+    if (!this.config) {
+      return;
+    }
+
+    this.config.lastDownload = timestamp;
+
+    if (!settings) {
+      return;
+    }
+
+    settings.maxmind = this.config;
+    await this.storageService.saveSettings<MaxMindServiceSettings>(settings);
   }
 }

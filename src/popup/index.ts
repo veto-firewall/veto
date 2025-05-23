@@ -565,7 +565,10 @@ async function saveRulesToBackground(): Promise<void> {
     const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
 
     if (ruleCount > 4500) {
-      toast.show(`Warning: Using ${ruleCount}/${ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit()} rules`, 'info');
+      toast.show(
+        `Warning: Using ${ruleCount}/${ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit()} rules`,
+        'info',
+      );
     }
   } catch (error) {
     void error;

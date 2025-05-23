@@ -2,7 +2,14 @@
  * EventService handles browser event management
  * Centralizes message handling and web request interception
  */
-import type { IService, ExtensionMsg, MsgSaveSettings, MsgSaveRules, MsgExportRules } from '../types';
+import type {
+  IService,
+  ExtensionMsg,
+  MsgSaveSettings,
+  MsgSaveRules,
+  MsgExportRules,
+} from '../types';
+import type { Settings, RuleSet } from '../types';
 import { ServiceFactory } from '../ServiceFactory';
 
 // Type-only imports for better tree-shaking
@@ -12,7 +19,6 @@ import type { NetworkService } from '../network/NetworkService';
 import type { MaxMindService } from '../maxmind/MaxMindService';
 import type { CacheService } from '../cache/CacheService';
 import type { LoggingService } from '../logging/LoggingService';
-import type { RequestLogData } from '../logging/LoggingService';
 
 /**
  * Service for managing browser events and messages
@@ -24,17 +30,17 @@ export class EventService implements IService {
   private maxmindService: MaxMindService;
   private cacheService: CacheService;
   private loggingService: LoggingService;
-  
+
   /**
    * Current settings
    */
-  private settings: any;
-  
+  private settings: Settings = {} as Settings;
+
   /**
    * Current rules
    */
-  private rules: any;
-  
+  private rules: RuleSet = {} as RuleSet;
+
   /**
    * Creates a new event service and initializes all dependencies via ServiceFactory
    */
@@ -47,7 +53,7 @@ export class EventService implements IService {
     this.cacheService = factory.getCacheService();
     this.loggingService = factory.getLoggingService();
   }
-  
+
   /**
    * Initialize the event service
    * @returns Promise that resolves when initialization is complete
@@ -56,23 +62,30 @@ export class EventService implements IService {
     // Load settings and rules
     this.settings = await this.storageService.getSettings();
     this.rules = await this.ruleService.getRules();
-    
+
     // Set up event listeners
     this.setupMessageListener();
     this.setupWebRequestListeners();
-    
+
     return Promise.resolve();
   }
-  
+
   /**
    * Set up the message listener for extension communication
    */
   private setupMessageListener(): void {
-    browser.runtime.onMessage.addListener((message, sender) => 
-      this.handleMessage(message, sender)
-    );
+    browser.runtime.onMessage.addListener((message, sender) => {
+      // Apply type guard to handle potential 'any' message data
+      if (message && typeof message === 'object' && 'type' in message) {
+        return this.handleMessage(message as ExtensionMsg, sender);
+      }
+
+      // Handle invalid messages
+      console.warn('Received invalid message format:', message);
+      return Promise.resolve({ success: false, error: 'Invalid message format' });
+    });
   }
-  
+
   /**
    * Set up web request listeners for request interception
    */
@@ -83,28 +96,85 @@ export class EventService implements IService {
       browser.webRequest.onBeforeRequest.addListener(
         details => this.handleBeforeRequest(details),
         { urls: ['<all_urls>'] },
-        ['blocking']
+        ['blocking'],
       );
       console.log('Web request listener registered successfully');
     } catch (e) {
       console.error('Failed to register web request listener:', e);
     }
   }
-  
+
   /**
    * Handle incoming messages from the extension
+   * This is a dispatcher that routes to specialized handlers based on message type
+   *
    * @param message - Message received
-   * @param sender - Message sender
+   * @param _sender - Message sender (unused)
    * @returns Promise resolving to response data
    */
   private async handleMessage(
     message: ExtensionMsg,
-    _sender: browser.runtime.MessageSender
+    _sender: browser.runtime.MessageSender,
   ): Promise<unknown> {
+    // Type guard to ensure message is valid
+    if (!message || typeof message !== 'object') {
+      return { success: false, error: 'Invalid message format' };
+    }
+
+    // Route messages to appropriate handlers to reduce method complexity
+    switch (message.type) {
+      case 'getSettings':
+      case 'getRules':
+        return this.handleGetMessages(message);
+
+      case 'saveSettings':
+      case 'saveRules':
+        return this.handleSaveMessages(message);
+
+      case 'getCountryLookupCache':
+      case 'setCountryLookupCache':
+      case 'clearCache':
+        return this.handleCacheMessages(message);
+
+      case 'exportRules':
+        return this.handleExportMessages(message);
+
+      default: {
+        // The message is of type 'never' at this point due to exhaustive type checking
+        interface UnknownMsg {
+          type?: string;
+        }
+
+        const unknownMsg = message as UnknownMsg;
+        console.warn(`Unknown message type: ${unknownMsg.type || 'undefined'}`);
+        return { success: false, error: 'Unknown message type' };
+      }
+    }
+  }
+
+  /**
+   * Handle get-type messages like getSettings and getRules
+   * @param message - Message to handle
+   * @returns Promise resolving to settings or rules
+   */
+  private async handleGetMessages(message: ExtensionMsg): Promise<Settings | RuleSet> {
     switch (message.type) {
       case 'getSettings':
         return this.storageService.getSettings();
+      case 'getRules':
+        return this.ruleService.getRules();
+      default:
+        throw new Error(`Invalid get message type: ${message.type}`);
+    }
+  }
 
+  /**
+   * Handle save-type messages like saveSettings and saveRules
+   * @param message - Message to handle
+   * @returns Promise resolving to success response
+   */
+  private async handleSaveMessages(message: ExtensionMsg): Promise<{ success: boolean }> {
+    switch (message.type) {
       case 'saveSettings': {
         const msgSaveSettings = message as MsgSaveSettings;
         this.settings = msgSaveSettings.settings;
@@ -114,30 +184,6 @@ export class EventService implements IService {
         await declarativeRuleService.setupRules(this.settings, this.rules);
         return { success: true };
       }
-      
-      case 'getCountryLookupCache': {
-        // Create an object with all key-value pairs from the cache
-        const cacheData: Record<string, Record<string, Record<string, string>> | Record<string, string>> = {};
-        
-        for (const [key, value] of this.cacheService.countryLookupCache.entries()) {
-          cacheData[key] = value;
-        }
-        
-        return cacheData;
-      }
-      
-      case 'setCountryLookupCache': {
-        const msgCache = message as any;
-        if (msgCache.key && msgCache.value) {
-          this.cacheService.countryLookupCache.set(msgCache.key, msgCache.value);
-          return { success: true };
-        }
-        return { success: false, error: 'Invalid cache parameters' };
-      }
-
-      case 'getRules':
-        return this.ruleService.getRules();
-
       case 'saveRules': {
         const msgSaveRules = message as MsgSaveRules;
         console.log('Saving updated rules:', {
@@ -161,39 +207,87 @@ export class EventService implements IService {
         await declarativeRuleService.setupRules(this.settings, this.rules);
         return { success: true };
       }
+      default:
+        throw new Error(`Invalid save message type: ${message.type}`);
+    }
+  }
 
-      case 'exportRules': {
-        const msgExportRules = message as MsgExportRules;
+  /**
+   * Handle cache-related messages
+   * @param message - Message to handle
+   * @returns Promise resolving to cache data or success response
+   */
+  private async handleCacheMessages(message: ExtensionMsg): Promise<unknown> {
+    switch (message.type) {
+      case 'getCountryLookupCache': {
+        // Create an object with all key-value pairs from the cache
+        const cacheData: Record<
+          string,
+          Record<string, Record<string, string>> | Record<string, string>
+        > = {};
 
-        // Normalize any hyphenated rule type to camelCase
-        let ruleType = msgExportRules.ruleType;
-        if (typeof ruleType === 'string' && ruleType.includes('-')) {
-          ruleType = ruleType.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+        for (const [key, value] of this.cacheService.countryLookupCache.entries()) {
+          cacheData[key] = value;
         }
 
-        return await this.ruleService.exportRules(ruleType, msgExportRules.includeComments || false);
+        return cacheData;
       }
+      case 'setCountryLookupCache': {
+        // Define a proper type for the cache message
+        type MsgSetCache = {
+          type: 'setCountryLookupCache';
+          key: string;
+          value: Record<string, Record<string, string>> | Record<string, string>;
+        };
 
+        // Type-safe casting with validation
+        const msgCache = message as MsgSetCache;
+        if (
+          typeof msgCache.key === 'string' &&
+          msgCache.value &&
+          typeof msgCache.value === 'object'
+        ) {
+          this.cacheService.countryLookupCache.set(msgCache.key, msgCache.value);
+          return { success: true };
+        }
+        return { success: false, error: 'Invalid cache parameters' };
+      }
       case 'clearCache':
         this.clearAllCaches();
         return { success: true };
-        
       default:
-        // The message is of type 'never' at this point due to exhaustive type checking
-        // Cast to any to access the type property for logging
-        const unknownMsg = message as any;
-        console.warn(`Unknown message type: ${unknownMsg.type || 'undefined'}`);
-        return { success: false, error: 'Unknown message type' };
+        throw new Error(`Invalid cache message type: ${message.type}`);
     }
   }
-  
+
+  /**
+   * Handle export-related messages
+   * @param message - Message to handle
+   * @returns Promise resolving to exported rules as text
+   */
+  private async handleExportMessages(message: ExtensionMsg): Promise<string> {
+    if (message.type !== 'exportRules') {
+      throw new Error(`Invalid export message type: ${message.type}`);
+    }
+
+    const msgExportRules = message as MsgExportRules;
+
+    // Normalize any hyphenated rule type to camelCase
+    let ruleType = msgExportRules.ruleType;
+    if (typeof ruleType === 'string' && ruleType.includes('-')) {
+      ruleType = ruleType.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+    }
+
+    return await this.ruleService.exportRules(ruleType, msgExportRules.includeComments || false);
+  }
+
   /**
    * Handle web request interception
    * @param details - Web request details
    * @returns Promise resolving to blocking response
    */
   private async handleBeforeRequest(
-    details: browser.webRequest._OnBeforeRequestDetails
+    details: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<browser.webRequest.BlockingResponse> {
     try {
       // Ensure rules and settings are loaded
@@ -259,9 +353,9 @@ export class EventService implements IService {
         cacheKey,
         this.rules,
         (key: string, value: boolean) => this.cacheService.ruleMatchCache.set(key, value),
-        details
+        details,
       );
-      
+
       if (ruleResult) {
         return ruleResult;
       }
@@ -274,7 +368,7 @@ export class EventService implements IService {
       return { cancel: false };
     }
   }
-  
+
   /**
    * Clear all caches
    */

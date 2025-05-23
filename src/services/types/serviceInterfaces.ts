@@ -18,21 +18,21 @@ export interface IRuleService extends IService {
    * @returns Promise resolving to the current ruleset
    */
   getRules(): Promise<RuleSet>;
-  
+
   /**
    * Save rules to storage
-   * @param rules - The ruleset to save
+   * @param _rules - The ruleset to save
    * @returns Promise resolving to true if successful
    */
-  saveRules(rules: RuleSet): Promise<boolean>;
-  
+  saveRules(_rules: RuleSet): Promise<boolean>;
+
   /**
    * Export rules as text
-   * @param ruleType - The type of rules to export
-   * @param includeComments - Whether to include comments in the output
+   * @param _ruleType - The type of rules to export
+   * @param _includeComments - Whether to include comments in the output
    * @returns Promise resolving to rules as a string
    */
-  exportRules(ruleType: string, includeComments?: boolean): Promise<string>;
+  exportRules(_ruleType: string, _includeComments?: boolean): Promise<string>;
 }
 
 /**
@@ -41,18 +41,18 @@ export interface IRuleService extends IService {
 export interface IStorageService extends IService {
   /**
    * Get a value from storage
-   * @param key - The key to retrieve
+   * @param _key - The key to retrieve
    * @returns Promise resolving to the stored value or null
    */
-  getValue<T>(key: string): Promise<T | null>;
-  
+  getValue<T>(_key: string): Promise<T | null>;
+
   /**
    * Save a value to storage
-   * @param key - The key to store under
-   * @param value - The value to store
+   * @param _key - The key to store under
+   * @param _value - The value to store
    * @returns Promise resolving to true if successful
    */
-  setValue<T>(key: string, value: T): Promise<boolean>;
+  setValue<T>(_key: string, _value: T): Promise<boolean>;
 }
 
 // Import dependency types
@@ -65,18 +65,18 @@ import type { Settings } from './settingsTypes';
 export interface IDeclarativeRuleService extends IService {
   /**
    * Set up declarative network request rules in the browser
-   * @param settings - The extension settings
-   * @param rules - The ruleset containing filtering rules
+   * @param _settings - The extension settings
+   * @param _rules - The ruleset containing filtering rules
    * @returns Promise that resolves when rules are set up
    */
-  setupRules(settings: Settings, rules: RuleSet): Promise<void>;
+  setupRules(_settings: Settings, _rules: RuleSet): Promise<void>;
 
   /**
    * Get the current rule count
    * @returns The number of active rules
    */
   getRuleCount(): number;
-  
+
   /**
    * Get the maximum number of rules allowed by Firefox
    * @returns The rule limit

@@ -20,17 +20,17 @@ export class RuleService implements IRuleService {
    * Storage service for persistent data
    */
   private storageService: StorageService;
-  
+
   /**
    * Current rule ID counter
    */
   private ruleId: number | null = null;
-  
+
   /**
    * Rule processors for different rule types
    */
   private processors: Map<string, BaseRuleProcessor> = new Map();
-  
+
   /**
    * Creates a new rule service
    * @param storageService - Storage service for persistent data
@@ -38,7 +38,7 @@ export class RuleService implements IRuleService {
   constructor(storageService: StorageService) {
     this.storageService = storageService;
   }
-  
+
   /**
    * Initialize the rule service
    * @returns Promise that resolves when initialization is complete
@@ -49,10 +49,10 @@ export class RuleService implements IRuleService {
       const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
       this.ruleId = declarativeRuleService.getRuleLimit() + 1;
     }
-    
+
     return Promise.resolve();
   }
-  
+
   /**
    * Get rules from storage
    * @returns Promise resolving to the current ruleset
@@ -60,7 +60,7 @@ export class RuleService implements IRuleService {
   async getRules(): Promise<RuleSet> {
     return this.storageService.getRules();
   }
-  
+
   /**
    * Save rules to storage
    * @param rules - The ruleset to save
@@ -69,7 +69,7 @@ export class RuleService implements IRuleService {
   async saveRules(rules: RuleSet): Promise<boolean> {
     return this.storageService.saveRules(rules);
   }
-  
+
   /**
    * Export rules as text
    * @param ruleType - The type of rules to export
@@ -85,7 +85,7 @@ export class RuleService implements IRuleService {
       return '';
     }
   }
-  
+
   /**
    * Generate a unique rule ID
    * @returns A unique rule ID as a string
@@ -98,7 +98,7 @@ export class RuleService implements IRuleService {
     }
     return (this.ruleId as number).toString();
   }
-  
+
   /**
    * Create a new rule
    * @param type - The type of rule
@@ -107,12 +107,7 @@ export class RuleService implements IRuleService {
    * @param isTerminating - Whether this is a terminating rule
    * @returns A Rule object
    */
-  createRule(
-    type: RuleType,
-    value: string,
-    action: RuleAction,
-    isTerminating = true,
-  ): Rule {
+  createRule(type: RuleType, value: string, action: RuleAction, isTerminating = true): Rule {
     return {
       id: this.generateRuleId(),
       type,
@@ -122,7 +117,7 @@ export class RuleService implements IRuleService {
       enabled: true,
     };
   }
-  
+
   /**
    * Parse a text input into an array of rules
    * @param type - The type of rule to create
@@ -131,12 +126,7 @@ export class RuleService implements IRuleService {
    * @param isTerminating - Whether these are terminating rules
    * @returns An array of Rule objects
    */
-  parseRules(
-    type: RuleType,
-    input: string,
-    action: RuleAction,
-    isTerminating = true,
-  ): Rule[] {
+  parseRules(type: RuleType, input: string, action: RuleAction, isTerminating = true): Rule[] {
     const rules: Rule[] = [];
 
     // Split by newlines first to properly handle comments
@@ -159,7 +149,7 @@ export class RuleService implements IRuleService {
 
     return rules;
   }
-  
+
   /**
    * Validate a rule value based on its type
    * @param type - The type of rule
@@ -180,6 +170,7 @@ export class RuleService implements IRuleService {
           new RegExp(value);
           return true;
         } catch (error) {
+          void error;
           return false;
         }
       case 'ip':
@@ -196,6 +187,7 @@ export class RuleService implements IRuleService {
           }
           return isIP(value);
         } catch (error) {
+          void error;
           return false;
         }
       case 'asn': {
@@ -207,7 +199,7 @@ export class RuleService implements IRuleService {
         return false;
     }
   }
-  
+
   /**
    * Process rules for a URL
    * @param url - URL to process
@@ -222,7 +214,7 @@ export class RuleService implements IRuleService {
     cacheKey: string,
     rules: RuleSet,
     cacheCallback: CacheCallback,
-    details?: browser.webRequest._OnBeforeRequestDetails
+    details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null> {
     // Process IP rules
     const ipProcessor = this.getProcessor('ip', rules, cacheCallback);
@@ -230,24 +222,24 @@ export class RuleService implements IRuleService {
     if (ipResult) {
       return ipResult;
     }
-    
+
     // Process ASN rules
     const asnProcessor = this.getProcessor('asn', rules, cacheCallback);
     const asnResult = await asnProcessor.process(url, cacheKey, details);
     if (asnResult) {
       return asnResult;
     }
-    
+
     // Process GeoIP rules
     const geoIpProcessor = this.getProcessor('geoip', rules, cacheCallback);
     const geoIpResult = await geoIpProcessor.process(url, cacheKey, details);
     if (geoIpResult) {
       return geoIpResult;
     }
-    
+
     return null;
   }
-  
+
   /**
    * Get or create a rule processor for a specific type
    * @param type - Type of processor to get
@@ -258,11 +250,11 @@ export class RuleService implements IRuleService {
   private getProcessor(
     type: string,
     rules: RuleSet,
-    cacheCallback: CacheCallback
+    cacheCallback: CacheCallback,
   ): BaseRuleProcessor {
     // Create a unique key for this processor instance
     const key = `${type}-${Date.now()}`;
-    
+
     if (!this.processors.has(key)) {
       switch (type) {
         case 'ip':
@@ -278,10 +270,10 @@ export class RuleService implements IRuleService {
           throw new Error(`Unknown processor type: ${type}`);
       }
     }
-    
+
     return this.processors.get(key)!;
   }
-  
+
   /**
    * Get filter file content
    * @param fileName - Name of the filter file
@@ -298,7 +290,7 @@ export class RuleService implements IRuleService {
     }
     return '';
   }
-  
+
   /**
    * Get rules text based on rule type
    * @param ruleType - Type of rules to get

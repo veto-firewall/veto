@@ -2,14 +2,13 @@
  * DeclarativeRuleService handles all browser declarativeNetRequest operations
  * Creates and manages declarative network request rules for content filtering
  */
-import type { IDeclarativeRuleService, IService, RuleSet, Settings } from '../types';
+import type { IDeclarativeRuleService, RuleSet, Settings } from '../types';
 import { StorageService } from '../storage/StorageService';
-import { ServiceFactory } from '../ServiceFactory';
-import { 
+import {
   BasicRuleProcessor,
   DomainRuleProcessor,
   TrackingParamProcessor,
-  RegexRuleProcessor
+  RegexRuleProcessor,
 } from './processors';
 
 /**
@@ -25,22 +24,22 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
    * Storage service for persistent data
    */
   private storageService: StorageService;
-  
+
   /**
    * The current count of active rules
    */
   private totalRuleCount = 0;
-  
+
   /**
    * Firefox rule limit for declarativeNetRequest
    */
   private ruleLimit: number = 5000; // Default fallback value
-  
+
   /**
    * Max length of regex pattern (Firefox limitation)
    */
   private maxRegexLength = 1024;
-  
+
   /**
    * Rule processors
    */
@@ -48,7 +47,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
     basic: BasicRuleProcessor,
     domain: DomainRuleProcessor,
     tracking: TrackingParamProcessor,
-    regex: RegexRuleProcessor
+    regex: RegexRuleProcessor,
   };
 
   /**
@@ -58,7 +57,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   constructor(storageService: StorageService) {
     this.storageService = storageService;
   }
-  
+
   /**
    * Initialize the declarative rule service
    * @returns Promise that resolves when initialization is complete
@@ -66,11 +65,11 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   async initialize(): Promise<void> {
     // Initialize the Firefox rule limit
     this.ruleLimit = this.getFirefoxRuleLimit();
-    
+
     // No additional initialization needed
     void console.log('DeclarativeRuleService initialized');
   }
-  
+
   /**
    * Get the maximum number of rules allowed by Firefox
    * @returns The rule limit
@@ -78,7 +77,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   getRuleLimit(): number {
     return this.ruleLimit;
   }
-  
+
   /**
    * Get the current rule count
    * @returns The number of active rules
@@ -86,7 +85,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   getRuleCount(): number {
     return this.totalRuleCount;
   }
-  
+
   /**
    * Reset the rule count
    * Called before regenerating all rules
@@ -94,7 +93,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   private resetRuleCount(): void {
     this.totalRuleCount = 0;
   }
-  
+
   /**
    * Track a rule count increase
    * @param count - Number of rules to add (default: 1)
@@ -102,7 +101,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   incrementRuleCount(count: number = 1): void {
     this.totalRuleCount += count;
   }
-  
+
   /**
    * Get the Firefox rule limit from the browser API
    * @returns The maximum number of rules allowed
@@ -115,7 +114,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
         MAX_NUMBER_OF_DYNAMIC_RULES?: number;
         MAX_NUMBER_OF_REGEX_RULES?: number;
       }
-      
+
       // Cast to our extended interface for better type safety
       const api = browser.declarativeNetRequest as ExtendedDNRApi;
 
@@ -142,7 +141,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       return this.ruleLimit;
     }
   }
-  
+
   /**
    * Set up declarative network request rules in the browser
    * @param settings - The extension settings
@@ -162,37 +161,53 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       if (settings.suspendUntilFiltersLoad) {
         await this.addTemporarySuspendRule();
       }
-      
+
       // Use a sequential ID counter for all rules
       let nextRuleId = 1;
 
       // Create and collect all rule types
-      const basicProcessor = new this.processors.basic(this);
+      const basicProcessor = new this.processors.basic();
       const basicRules = basicProcessor.createRules(settings, nextRuleId);
       nextRuleId += basicRules.length || 1;
 
-      const trackingProcessor = new this.processors.tracking(this);
+      const trackingProcessor = new this.processors.tracking();
       const trackingRules = trackingProcessor.createRules(rules, nextRuleId);
       nextRuleId += trackingRules.length || 1;
 
-      const domainProcessor = new this.processors.domain(this, this.maxRegexLength);
-      
+      const domainProcessor = new this.processors.domain();
+
       // Create domain rules
-      const allowedDomainRules = domainProcessor.createDomainRules(rules.allowedDomains, nextRuleId, 'allow');
+      const allowedDomainRules = domainProcessor.createDomainRules(
+        rules.allowedDomains,
+        nextRuleId,
+        'allow',
+      );
       nextRuleId += allowedDomainRules.length || 1;
 
-      const blockedDomainRules = domainProcessor.createDomainRules(rules.blockedDomains, nextRuleId, 'block');
+      const blockedDomainRules = domainProcessor.createDomainRules(
+        rules.blockedDomains,
+        nextRuleId,
+        'block',
+      );
       nextRuleId += blockedDomainRules.length || 1;
 
       // Create URL rules
-      const allowedUrlRules = domainProcessor.createUrlRules(rules.allowedUrls, nextRuleId, 'allow');
+      const allowedUrlRules = domainProcessor.createUrlRules(
+        rules.allowedUrls,
+        nextRuleId,
+        'allow',
+      );
       nextRuleId += allowedUrlRules.length || 1;
 
-      const blockedUrlRules = domainProcessor.createUrlRules(rules.blockedUrls, nextRuleId, 'block');
+      const blockedUrlRules = domainProcessor.createUrlRules(
+        rules.blockedUrls,
+        nextRuleId,
+        'block',
+      );
       nextRuleId += blockedUrlRules.length || 1;
 
       // Create regex rules
-      const regexProcessor = new this.processors.regex(this);
+      const regexProcessor = new this.processors.regex();
       const allowedRegexRules = regexProcessor.createRules(rules.allowedRegex, nextRuleId, 'allow');
       nextRuleId += allowedRegexRules.length || 1;
 
@@ -246,7 +261,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       }
     }
   }
-  
+
   /**
    * Clear all existing declarative network request rules
    */
@@ -275,7 +290,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       });
     }
   }
-  
+
   /**
    * Add a temporary rule that blocks all traffic while rules are being loaded
    */
@@ -288,7 +303,8 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
           {
             id: SUSPEND_RULE_ID,
             priority: 100, // Maximum priority
-            action: { type: 'block' },              condition: {
+            action: { type: 'block' },
+            condition: {
               urlFilter: '*://*/*',
               resourceTypes: [
                 'main_frame',
@@ -315,7 +331,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       console.error('Failed to add temporary suspend rule:', error);
     }
   }
-  
+
   /**
    * Remove the temporary blocking rule
    */

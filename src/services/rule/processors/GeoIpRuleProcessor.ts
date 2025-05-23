@@ -14,7 +14,7 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
    * @private
    */
   private maxmindService;
-  
+
   /**
    * Network service for domain resolution
    * @private
@@ -32,7 +32,7 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
     this.maxmindService = serviceFactory.getMaxMindService();
     this.networkService = serviceFactory.getNetworkService();
   }
-  
+
   /**
    * Process GeoIP rules for a URL
    * @param url - URL to process rules for
@@ -43,7 +43,7 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
   async process(
     url: URL,
     cacheKey: string,
-    details?: browser.webRequest._OnBeforeRequestDetails
+    details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null> {
     if (Object.keys(this.rules.blockedCountries).length === 0) {
       return null;

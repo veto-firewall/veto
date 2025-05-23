@@ -18,11 +18,11 @@ export const serviceFactory = ServiceFactory.getInstance();
  */
 async function initExtension(): Promise<void> {
   void console.log('Initializing extension...');
-  
+
   // Initialize all services
   const serviceFactory = ServiceFactory.getInstance();
   await serviceFactory.initializeAllServices();
-  
+
   void console.log('Extension initialized');
 }
 

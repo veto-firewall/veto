@@ -67,7 +67,7 @@ export class StorageService implements IStorageService {
   async getValue<T>(key: string): Promise<T | null> {
     try {
       const result = await browser.storage.local.get(key);
-      return result[key] as T || null;
+      return (result[key] as T) || null;
     } catch (error) {
       console.error(`Failed to retrieve ${key} from storage:`, error);
       return null;
@@ -121,7 +121,7 @@ export class StorageService implements IStorageService {
   async getSettings<T>(): Promise<T> {
     try {
       const settings = await this.getValue<T>('settings');
-      return settings || DEFAULT_SETTINGS as unknown as T;
+      return settings || (DEFAULT_SETTINGS as unknown as T);
     } catch (error) {
       console.error('Failed to retrieve settings from storage:', error);
       return DEFAULT_SETTINGS as unknown as T;

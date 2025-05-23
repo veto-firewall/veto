@@ -22,11 +22,11 @@ export class NetworkService implements IService {
   async initialize(): Promise<void> {
     return Promise.resolve();
   }
-  
+
   /**
    * Check if an IP address is in a private range
    * Private ranges include loopback, link-local, private, and reserved addresses
-   * 
+   *
    * @param ip - IP address to check
    * @returns True if the IP is in a private range, false otherwise
    */
@@ -59,10 +59,10 @@ export class NetworkService implements IService {
       return false;
     }
   }
-  
+
   /**
    * Check if an IP matches a specific range (CIDR notation or start-end range)
-   * 
+   *
    * @param ip - IP address to check
    * @param range - IP range in CIDR notation (e.g., "192.168.1.0/24") or start-end format (e.g., "192.168.1.1-192.168.1.100")
    * @returns True if IP is in the specified range, false otherwise
@@ -88,21 +88,21 @@ export class NetworkService implements IService {
             start
               .toByteArray()
               .map((b: number) => b.toString(16).padStart(2, '0'))
-              .join('')
+              .join(''),
         );
         const endBigInt = BigInt(
           '0x' +
             end
               .toByteArray()
               .map((b: number) => b.toString(16).padStart(2, '0'))
-              .join('')
+              .join(''),
         );
         const addrBigInt = BigInt(
           '0x' +
             addr
               .toByteArray()
               .map((b: number) => b.toString(16).padStart(2, '0'))
-              .join('')
+              .join(''),
         );
 
         return addrBigInt >= startBigInt && addrBigInt <= endBigInt;
@@ -115,7 +115,7 @@ export class NetworkService implements IService {
       return false;
     }
   }
-  
+
   /**
    * Check if a hostname resolves to a private IP address
    * @param hostname - Hostname to check
@@ -144,7 +144,7 @@ export class NetworkService implements IService {
 
     return false;
   }
-  
+
   /**
    * Resolve a domain name to its IP address
    * @param domain - Domain name to resolve

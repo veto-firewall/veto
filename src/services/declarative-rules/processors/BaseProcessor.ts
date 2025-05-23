@@ -1,7 +1,8 @@
 /**
  * Base class for declarative rule processors
  */
-import { DeclarativeRuleService } from '../DeclarativeRuleService';
+import type { DeclarativeRuleService } from '../DeclarativeRuleService';
+import { ServiceFactory } from '../../ServiceFactory';
 
 /**
  * All available resource types to use for comprehensive rules
@@ -35,9 +36,8 @@ export abstract class BaseProcessor {
 
   /**
    * Creates a new processor
-   * @param service - The parent declarative rule service
    */
-  constructor(service: DeclarativeRuleService) {
-    this.service = service;
+  constructor() {
+    this.service = ServiceFactory.getInstance().getDeclarativeRuleService();
   }
 }

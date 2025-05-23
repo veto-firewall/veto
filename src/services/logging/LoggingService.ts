@@ -7,7 +7,15 @@ import type { IService } from '../types';
 /**
  * Block reason types for request blocking
  */
-export type BlockReason = 'ip' | 'asn' | 'geoip' | 'domain' | 'url' | 'regex' | 'private-ip' | 'content';
+export type BlockReason =
+  | 'ip'
+  | 'asn'
+  | 'geoip'
+  | 'domain'
+  | 'url'
+  | 'regex'
+  | 'private-ip'
+  | 'content';
 
 /**
  * Request log data interface containing information about blocked requests
@@ -33,7 +41,7 @@ export class LoggingService implements IService {
   async initialize(): Promise<void> {
     return Promise.resolve();
   }
-  
+
   /**
    * Returns a user-friendly resource type name
    * Uses the same resource types as declarativeNetRequest API

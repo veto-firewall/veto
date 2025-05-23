@@ -4,12 +4,12 @@
  */
 import type { RuleSet } from '../../types';
 import { ServiceFactory } from '../../ServiceFactory';
-import type { LoggingService, BlockReason, RequestLogData } from '../../logging/LoggingService';
+import type { LoggingService, BlockReason } from '../../logging/LoggingService';
 
 /**
  * Type for the cache callback function
  */
-export type CacheCallback = (key: string, value: boolean) => void;
+export type CacheCallback = (_key: string, _value: boolean) => void;
 
 /**
  * Base class for all rule processors
@@ -19,17 +19,17 @@ export abstract class BaseRuleProcessor {
    * Rules to process
    */
   protected rules: RuleSet;
-  
+
   /**
    * Logging service for logging blocked requests
    */
   protected loggingService: LoggingService;
-  
+
   /**
    * Callback function to update cache
    */
   protected cacheCallback: CacheCallback;
-  
+
   /**
    * Creates a new rule processor
    * @param rules - Rules to process
@@ -49,11 +49,11 @@ export abstract class BaseRuleProcessor {
    * @returns Promise resolving to blocking response or null if no match
    */
   abstract process(
-    url: URL,
-    cacheKey: string,
-    details?: browser.webRequest._OnBeforeRequestDetails
+    _url: URL,
+    _cacheKey: string,
+    _details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null>;
-  
+
   /**
    * Log a blocked request
    * @param details - Web request details
@@ -65,17 +65,17 @@ export abstract class BaseRuleProcessor {
     details: browser.webRequest._OnBeforeRequestDetails,
     ip?: string,
     blockReason: BlockReason = 'ip',
-    extraInfo: Record<string, any> = {}
+    extraInfo: Record<string, unknown> = {},
   ): void {
     const url = new URL(details.url);
-    
+
     this.loggingService.logBlockedRequest({
       url: details.url,
       domain: url.hostname,
       ip: ip,
       resourceType: details.type || 'unknown',
       blockReason,
-      ...extraInfo
+      ...extraInfo,
     });
   }
 }

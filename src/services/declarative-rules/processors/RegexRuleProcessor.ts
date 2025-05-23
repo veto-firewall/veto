@@ -10,7 +10,7 @@ import type { Rule } from '../../types';
 export class RegexRuleProcessor extends BaseProcessor {
   /**
    * Creates rules for regex patterns
-   * 
+   *
    * @param rules - The rules to process
    * @param startId - Starting rule ID
    * @param action - Action to take (block or allow)

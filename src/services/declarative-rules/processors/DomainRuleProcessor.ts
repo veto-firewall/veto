@@ -15,12 +15,11 @@ export class DomainRuleProcessor extends BaseProcessor {
 
   /**
    * Creates a new domain rule processor
-   * @param service - The parent declarative rule service
-   * @param maxRegexLength - Maximum length of a regex pattern
    */
-  constructor(service: any, maxRegexLength: number) {
-    super(service);
-    this.maxRegexLength = maxRegexLength;
+  constructor() {
+    super();
+    // Set a default max regex length (Firefox limitation)
+    this.maxRegexLength = 1024;
   }
 
   /**
@@ -40,7 +39,7 @@ export class DomainRuleProcessor extends BaseProcessor {
     if (enabledRules.length === 0) return [];
 
     const domainValues = enabledRules.map(rule => rule.value);
-    
+
     // Create regex patterns (multiple if needed to stay under length limit)
     const patterns = this.createRegexPatterns(domainValues);
 
@@ -70,9 +69,9 @@ export class DomainRuleProcessor extends BaseProcessor {
     // Process each URL rule individually
     for (const rule of enabledRules) {
       const ruleAction: browser.declarativeNetRequest._RuleAction =
-        action === 'block' 
-          ? { type: 'block' } 
-          : rule.action === 'redirect' 
+        action === 'block'
+          ? { type: 'block' }
+          : rule.action === 'redirect'
             ? { type: 'redirect', redirect: { url: rule.value } }
             : { type: 'allow' };
 
