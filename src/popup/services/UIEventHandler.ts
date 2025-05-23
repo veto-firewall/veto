@@ -1,4 +1,4 @@
-import { Settings, RuleSet } from '../../utils/types';
+import type { Settings, RuleSet } from '../../services/types';
 import { Toast } from '../components/Toast';
 
 // Create toast instance for notifications

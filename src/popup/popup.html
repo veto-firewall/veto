@@ -113,8 +113,8 @@
           <div class="section-content" id="dnr-rules-content" role="region">
             <div class="setting-info">
               <p>
-                <strong>Rule Limits:</strong> Firefox has a maximum limit of 5,000 declarative
-                rules. Each line in these text areas creates one rule when saved.
+                <strong>Rule Limits:</strong> <span id="rule-count">0</span> /
+                <span id="rule-limit">5000</span>
               </p>
             </div>
             <!-- Allowed Domains -->
@@ -124,7 +124,6 @@
                 <input type="checkbox" id="allowed-domains-terminating" checked />
                 <label for="allowed-domains-terminating">Terminating (Final) Rule</label>
               </div>
-              <span class="setting-info">Max: 990 rules</span>
               <textarea
                 id="allowed-domains"
                 placeholder="Enter domain names separated by new line or space"
@@ -142,7 +141,6 @@
                 <input type="checkbox" id="blocked-domains-terminating" checked />
                 <label for="blocked-domains-terminating">Terminating (Final) Rule</label>
               </div>
-              <span class="setting-info">Max: 1,500 rules</span>
               <textarea
                 id="blocked-domains"
                 placeholder="Enter domain names separated by new line or space"
@@ -160,7 +158,6 @@
                 <input type="checkbox" id="allowed-urls-terminating" checked />
                 <label for="allowed-urls-terminating">Terminating (Final) Rule</label>
               </div>
-              <span class="setting-info">Max: 500 rules</span>
               <textarea id="allowed-urls" placeholder="Enter URLs separated by new line"></textarea>
               <div class="rule-actions">
                 <button id="save-allowed-urls">Save</button>
@@ -175,7 +172,6 @@
                 <input type="checkbox" id="blocked-urls-terminating" checked />
                 <label for="blocked-urls-terminating">Terminating (Final) Rule</label>
               </div>
-              <span class="setting-info">Max: 1,300 rules</span>
               <textarea id="blocked-urls" placeholder="Enter URLs separated by new line"></textarea>
               <div class="rule-actions">
                 <button id="save-blocked-urls">Save</button>
@@ -190,7 +186,6 @@
                 <input type="checkbox" id="allowed-regex-terminating" checked />
                 <label for="allowed-regex-terminating">Terminating (Final) Rule</label>
               </div>
-              <span class="setting-info">Max: 200 rules</span>
               <textarea
                 id="allowed-regex"
                 placeholder="Enter RegEx patterns separated by new line"
@@ -208,7 +203,6 @@
                 <input type="checkbox" id="blocked-regex-terminating" checked />
                 <label for="blocked-regex-terminating">Terminating (Final) Rule</label>
               </div>
-              <span class="setting-info">Max: 501 rules</span>
               <textarea
                 id="blocked-regex"
                 placeholder="Enter RegEx patterns separated by new line"

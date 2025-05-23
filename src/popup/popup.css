@@ -557,6 +557,27 @@ button.loading::after {
   }
 }
 
+/* Rule count styling */
+#rule-count {
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--card-background);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+#rule-count.warning {
+  background-color: var(--warning-color);
+  color: white;
+}
+
+#rule-count.danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
 /* Improved form elements styling */
 input[type='text'],
 select,

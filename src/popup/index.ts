@@ -1,7 +1,7 @@
 import '../popup/popup.css';
-import { Settings, RuleSet } from '../utils/types';
-import { countryLookupCache } from '../utils/caching';
+import type { Settings, RuleSet } from '../services/types';
 import { setupUIEvents } from './services/UIEventHandler';
+import { PopupService } from './services/PopupService';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { Toast } from './components/Toast';
 import {
@@ -10,6 +10,7 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
+import { ServiceFactory } from '../services/ServiceFactory';
 
 // Import countries data types for typechecking
 import type {
@@ -23,6 +24,38 @@ let rules: RuleSet;
 const toast = new Toast();
 
 // Initialize the popup
+/**
+ * Update the rule count display in the UI
+ */
+async function updateRuleCount(): Promise<void> {
+  const result = await browser.storage.local.get('ruleCount');
+  const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
+  const ruleLimit = ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit();
+
+  // Update rule count element
+  const ruleCountElement = document.getElementById('rule-count');
+  if (ruleCountElement) {
+    ruleCountElement.textContent = String(ruleCount);
+
+    // Add warning class if approaching limit
+    if (ruleCount > Math.floor(ruleLimit * 0.9)) {
+      // 90% of limit = danger
+      ruleCountElement.classList.add('danger');
+    } else if (ruleCount > Math.floor(ruleLimit * 0.8)) {
+      // 80% of limit = warning
+      ruleCountElement.classList.add('warning');
+    } else {
+      ruleCountElement.classList.remove('warning', 'danger');
+    }
+  }
+
+  // Update rule limit element
+  const ruleLimitElement = document.getElementById('rule-limit');
+  if (ruleLimitElement) {
+    ruleLimitElement.textContent = String(ruleLimit);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Show loading state
   document.body.classList.add('loading');
@@ -34,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await setupCountryList();
     initThemeSwitcher();
     initExtensionInfo();
+    await updateRuleCount();
 
     // Initialize UI event handlers
     setupUIEvents(settings, rules, saveSettingsToBackground, saveRulesToBackground);
@@ -264,7 +298,8 @@ async function setupCountryList(): Promise<void> {
 
   // Process countries data and organize by continent
   const countriesByContinent = processCountriesData(countries);
-  countryLookupCache.set('byContinent', countriesByContinent);
+  const popupService = PopupService.getInstance();
+  await popupService.setCountryLookupCache('byContinent', countriesByContinent);
 
   // Create continent groups
   Object.entries(continents).forEach(([continentCode, continentName]) => {
@@ -426,7 +461,7 @@ function handleContinentChange(event: Event): void {
 }
 
 // Handle country checkbox change
-function handleCountryChange(event: Event): void {
+async function handleCountryChange(event: Event): Promise<void> {
   const checkbox = event.target as HTMLInputElement;
   const countryCode = checkbox.dataset.country;
   const continentCode = checkbox.dataset.continent;
@@ -443,20 +478,22 @@ function handleCountryChange(event: Event): void {
 
   // Check if we need to update continent checkbox
   if (continentCode) {
-    updateContinentCheckbox(continentCode);
+    await updateContinentCheckbox(continentCode);
   }
 
   void saveRulesToBackground();
 }
 
 // Update continent checkbox based on country selections
-function updateContinentCheckbox(continentCode: string): void {
+async function updateContinentCheckbox(continentCode: string): Promise<void> {
   const continentCheckbox = document.getElementById(
     `continent-${continentCode}`,
   ) as HTMLInputElement;
   if (!continentCheckbox) return;
 
-  const countriesByContinent = countryLookupCache.get('byContinent') as Record<
+  const popupService = PopupService.getInstance();
+  const cacheData = await popupService.getCountryLookupCache();
+  const countriesByContinent = (cacheData?.byContinent || {}) as Record<
     string,
     Record<string, string>
   >;
@@ -519,8 +556,23 @@ async function saveRulesToBackground(): Promise<void> {
       type: 'saveRules',
       rules: rules,
     });
+
+    // Update rule count after saving rules
+    await updateRuleCount();
+
+    // Check if we're approaching the limit and show a notification if needed
+    const result = await browser.storage.local.get('ruleCount');
+    const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
+
+    if (ruleCount > 4500) {
+      toast.show(
+        `Warning: Using ${ruleCount}/${ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit()} rules`,
+        'info',
+      );
+    }
   } catch (error) {
     void error;
+    toast.show('Error saving rules', 'error');
   }
 }
 

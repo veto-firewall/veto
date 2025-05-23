@@ -1,5 +1,5 @@
-import { Rule, RuleSet } from '../../utils/types';
-import { parseRules } from '../../utils/rules';
+import type { Rule, RuleSet } from '../../services/types';
+import { ServiceFactory } from '../../services/ServiceFactory';
 
 /**
  * Parses rules based on their type
@@ -17,7 +17,8 @@ export function parseRulesForType(
   isTerminating: boolean,
 ): Rule[] {
   if (['domain', 'url', 'regex', 'ip', 'asn', 'tracking'].includes(ruleType)) {
-    return parseRules(
+    const ruleService = ServiceFactory.getInstance().getRuleService();
+    return ruleService.parseRules(
       ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
       rulesText,
       actionType as 'allow' | 'block' | 'redirect',

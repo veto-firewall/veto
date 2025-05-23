@@ -42,11 +42,17 @@ To use GeoIP and ASN filtering features you need a free MaxMind account:
 
 ## Architecture And Dependencies
 
-The extension follows a modular architecture:
+The extension follows a service-based architecture:
 
-- **Background Script**: Handles filtering logic and browser events
+- **Service Layer**: Core functionality organized into services:
+  - **StorageService**: Manages all browser storage operations
+  - **RuleService**: Handles rule management and processing
+  - **NetworkService**: Manages DNS resolution and network operations
+  - **MaxMindService**: Handles GeoIP and ASN database operations
+  - **EventService**: Coordinates browser events and message handling
+- **Background Script**: Initializes services and connects components
 - **Popup Interface**: User interface for managing rules and settings
-- **Utility Modules**: Handle specialized functions like GeoIP lookups
+- **Utility Modules**: Handle specialized functions and provide helpers
 
 ### Technology Stack
 
