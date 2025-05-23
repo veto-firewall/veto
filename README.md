@@ -72,7 +72,7 @@ The extension uses several key technologies:
 
 ### Bundle Analysis
 
-[![Bundle Report](assets/images/bundle-report-parsed.png)](https://veto-firewall.github.io/veto/bundle-report.html)
+[![Bundle Report](docs/bundle-report-parsed.png)](https://veto-firewall.github.io/veto/bundle-report.html)
 
 ## Building and Publishing
 

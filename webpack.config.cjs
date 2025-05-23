@@ -15,8 +15,8 @@ module.exports = {
   },
   optimization: {
     usedExports: true,
-    sideEffects: true,
-    minimize: true,
+    sideEffects: false, // Enable better tree-shaking
+    minimize: true
   },
   module: {
     rules: [

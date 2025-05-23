@@ -4,7 +4,10 @@
  */
 import type { IRuleService, RuleSet, Rule, RuleType, RuleAction } from '../types';
 import { StorageService } from '../storage/StorageService';
-import { isFQDN, isURL, isIP, isInt } from 'validator';
+import isFQDN from 'validator/lib/isFQDN.js';
+import isURL from 'validator/lib/isURL.js';
+import isIP from 'validator/lib/isIP.js';
+import isInt from 'validator/lib/isInt.js';
 import { ServiceFactory } from '../ServiceFactory';
 import { BaseRuleProcessor } from './processors/BaseRuleProcessor';
 import { IpRuleProcessor } from './processors/IpRuleProcessor';
