@@ -15,7 +15,7 @@ import type { Readable } from 'stream';
 /**
  * Settings interface with MaxMind configuration
  */
-export interface Settings {
+export interface MaxMindServiceSettings {
   maxmind: MaxMindConfig;
   [key: string]: any;
 }
@@ -86,7 +86,7 @@ export class MaxMindService implements IService {
    */
   async initialize(): Promise<void> {
     // Get MaxMind configuration from settings
-    const settings = await this.storageService.getSettings<Settings>();
+    const settings = await this.storageService.getSettings<MaxMindServiceSettings>();
     
     if (settings && settings.maxmind) {
       this.config = settings.maxmind;
@@ -105,7 +105,7 @@ export class MaxMindService implements IService {
             this.config.lastDownload = now;
             if (settings) {
               settings.maxmind = this.config;
-              await this.storageService.saveSettings<Settings>(settings);
+              await this.storageService.saveSettings<MaxMindServiceSettings>(settings);
             }
           }
         } else {
@@ -134,17 +134,17 @@ export class MaxMindService implements IService {
     this.config = config;
     
     // Update settings
-    const settings = await this.storageService.getSettings<Settings>();
+    const settings = await this.storageService.getSettings<MaxMindServiceSettings>();
     if (settings) {
       settings.maxmind = config;
-      return this.storageService.saveSettings<Settings>(settings);
+      return this.storageService.saveSettings<MaxMindServiceSettings>(settings);
     }
     
     // If no settings exist yet, create them
-    const newSettings: Settings = {
+    const newSettings: MaxMindServiceSettings = {
       maxmind: config
     };
-    return this.storageService.saveSettings<Settings>(newSettings);
+    return this.storageService.saveSettings<MaxMindServiceSettings>(newSettings);
   }
   
   /**
