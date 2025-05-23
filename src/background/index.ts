@@ -1,4 +1,3 @@
-// filepath: /root/workspace/veto/src/background/index.ts
 /**
  * Background script for the Veto extension
  * Main entry point that initializes the extension using the service architecture

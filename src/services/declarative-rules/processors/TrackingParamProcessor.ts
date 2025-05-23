@@ -15,7 +15,7 @@ export class TrackingParamProcessor extends BaseProcessor {
    * @param startId - Starting rule ID
    * @returns Array of declarative network request rules
    */
-  createRules(rules: RuleSet, startId: number = 50): browser.declarativeNetRequest.Rule[] {
+  createRules(rules: RuleSet, startId: number): browser.declarativeNetRequest.Rule[] {
     if (rules.trackingParams.length === 0) return [];
 
     // Filter enabled rules

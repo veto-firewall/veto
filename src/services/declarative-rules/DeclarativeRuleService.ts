@@ -9,6 +9,7 @@ import {
   DomainRuleProcessor,
   TrackingParamProcessor,
   RegexRuleProcessor,
+  ALL_RESOURCE_TYPES,
 } from './processors';
 
 /**
@@ -153,14 +154,12 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       // Reset rule count before generating new rules
       this.resetRuleCount();
 
-      // Clear all existing rules (both session and dynamic)
-      await this.clearExistingRules();
+      // Get existing dynamic rules to check for suspend rule
+      const existingDynamicRules = await browser.declarativeNetRequest.getDynamicRules();
+      const suspendRuleExists = existingDynamicRules.some(rule => rule.id === SUSPEND_RULE_ID);
 
-      // Handle "suspend until filters load" setting - uses dynamic rules
-      // This rule has priority over all others and blocks everything while rules are loading
-      if (settings.suspendUntilFiltersLoad) {
-        await this.addTemporarySuspendRule();
-      }
+      // Clear all existing session rules
+      await this.clearExistingSessionRules();
 
       // Use a sequential ID counter for all rules
       let nextRuleId = 1;
@@ -236,10 +235,10 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       // Save current rule count to storage for the popup to display
       await browser.storage.local.set({ ruleCount: this.getRuleCount() });
 
-      // Remove the temporary blocking rule if it was added
-      if (settings.suspendUntilFiltersLoad) {
-        await this.removeTemporarySuspendRule();
-        console.log('Removed temporary blocking rule after filters loaded successfully');
+      // Remove the startup suspend rule if it exists and feature is enabled
+      if (suspendRuleExists && settings.suspendUntilFiltersLoad) {
+        await this.removeSuspendRule();
+        console.log('Removed startup blocking rule after filters loaded successfully');
       }
 
       console.log(
@@ -255,10 +254,9 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       };
       await browser.storage.local.set({ ruleUpdateError: errorInfo });
 
-      // Make sure to remove the blocking rule if there was an error
-      if (settings.suspendUntilFiltersLoad) {
-        await this.removeTemporarySuspendRule();
-      }
+      // Don't remove the suspend rule if there was an error
+      // This prevents requests from leaking through when rules fail to load
+      // The suspend rule will be removed on the next successful attempt
     }
   }
 
@@ -292,9 +290,26 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   }
 
   /**
+   * Clear only existing session rules, leaving dynamic rules intact
+   */
+  private async clearExistingSessionRules(): Promise<void> {
+    // Get existing session rules
+    const existingSessionRules = await browser.declarativeNetRequest.getSessionRules();
+    const existingSessionRuleIds = existingSessionRules.map(r => r.id);
+
+    // Remove all existing session rules
+    if (existingSessionRuleIds.length > 0) {
+      await browser.declarativeNetRequest.updateSessionRules({
+        removeRuleIds: existingSessionRuleIds,
+        addRules: [],
+      });
+    }
+  }
+
+  /**
    * Add a temporary rule that blocks all traffic while rules are being loaded
    */
-  private async addTemporarySuspendRule(): Promise<void> {
+  private async addSuspendRule(): Promise<void> {
     try {
       // Add a temporary blocking rule with maximum priority
       await browser.declarativeNetRequest.updateDynamicRules({
@@ -302,40 +317,26 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
         addRules: [
           {
             id: SUSPEND_RULE_ID,
-            priority: 100, // Maximum priority
+            priority: 1000000, // Maximum priority
             action: { type: 'block' },
             condition: {
               urlFilter: '*://*/*',
-              resourceTypes: [
-                'main_frame',
-                'sub_frame',
-                'stylesheet',
-                'script',
-                'image',
-                'font',
-                'object',
-                'xmlhttprequest',
-                'ping',
-                'csp_report',
-                'media',
-                'websocket',
-                'other',
-              ],
+              resourceTypes: ALL_RESOURCE_TYPES,
             },
           },
         ],
       });
 
-      console.log('Added temporary blocking rule while filters load');
+      console.log('Added blocking rule for browser startup');
     } catch (error) {
-      console.error('Failed to add temporary suspend rule:', error);
+      console.error('Failed to add suspend rule:', error);
     }
   }
 
   /**
    * Remove the temporary blocking rule
    */
-  private async removeTemporarySuspendRule(): Promise<void> {
+  private async removeSuspendRule(): Promise<void> {
     try {
       await browser.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: [SUSPEND_RULE_ID],
@@ -343,6 +344,21 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       });
     } catch (removeError) {
       console.error('Failed to remove blocking rule:', removeError);
+    }
+  }
+
+  /**
+   * Update the suspend until filters load setting
+   * Creates or removes the suspend rule based on the setting
+   * @param enabled - Whether the setting is enabled
+   */
+  async updateSuspendSetting(enabled: boolean): Promise<void> {
+    if (enabled) {
+      // Setting enabled - create the suspend rule
+      await this.addSuspendRule();
+    } else {
+      // Setting disabled - remove any suspend rule
+      await this.removeSuspendRule();
     }
   }
 }

@@ -66,6 +66,7 @@ export class EventService implements IService {
     // Set up event listeners
     this.setupMessageListener();
     this.setupWebRequestListeners();
+    this.setupBrowserShutdownListener();
 
     return Promise.resolve();
   }
@@ -102,6 +103,25 @@ export class EventService implements IService {
     } catch (e) {
       console.error('Failed to register web request listener:', e);
     }
+  }
+
+  /**
+   * Set up browser shutdown listener to create suspension rule on browser exit
+   */
+  private setupBrowserShutdownListener(): void {
+    browser.runtime.onSuspend.addListener(async () => {
+      try {
+        // Check current settings
+        if (this.settings.suspendUntilFiltersLoad) {
+          // Create suspend rule that will be in place on next browser startup
+          const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+          await declarativeRuleService.updateSuspendSetting(true);
+          console.log('Added startup blocking rule for next browser session');
+        }
+      } catch (error) {
+        console.error('Failed to add startup blocking rule:', error);
+      }
+    });
   }
 
   /**
@@ -177,9 +197,27 @@ export class EventService implements IService {
     switch (message.type) {
       case 'saveSettings': {
         const msgSaveSettings = message as MsgSaveSettings;
+
+        // Check if suspendUntilFiltersLoad setting changed
+        const suspendSettingChanged =
+          this.settings.suspendUntilFiltersLoad !==
+          msgSaveSettings.settings.suspendUntilFiltersLoad;
+        const newSuspendSetting = msgSaveSettings.settings.suspendUntilFiltersLoad;
+
+        // Update settings
         this.settings = msgSaveSettings.settings;
         await this.storageService.saveSettings(this.settings);
         this.clearAllCaches();
+
+        // Handle suspend setting change
+        if (suspendSettingChanged) {
+          const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+          // Update the suspend rule for the next browser startup
+          await declarativeRuleService.updateSuspendSetting(newSuspendSetting);
+          console.log(`Suspend until filters load setting changed to: ${newSuspendSetting}`);
+        }
+
+        // Set up rules with new settings
         const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
         await declarativeRuleService.setupRules(this.settings, this.rules);
         return { success: true };
