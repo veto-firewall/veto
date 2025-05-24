@@ -63,11 +63,22 @@
                   ><strong>license key</strong></a
                 >.
               </p>
-              <div class="setting-item">
-                <label for="license-key">License Key</label>
+              <div class="setting-item inline-controls">
                 <input type="text" id="license-key" placeholder="License Key" required />
+                <button id="save-maxmind" aria-label="Save MaxMind credentials">Save</button>
               </div>
-              <button id="save-maxmind" aria-label="Save MaxMind credentials">Save</button>
+            </div>
+
+            <div class="setting-group">
+              <h3>Rule Limits: <span id="rule-count">0 / 5,000</span></h3>
+              <p class="setting-info">
+                Combined rules for Domain, URL, and Tracking filters (<a
+                  href="https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/declarativeNetRequest/MAX_NUMBER_OF_SESSION_RULES"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >browser limitation</a
+                >). IP and Location filters are unlimited.
+              </p>
             </div>
           </div>
         </details>
@@ -78,7 +89,7 @@
           <div class="section-content" id="basic-rules-content" role="region">
             <div class="setting-item">
               <input type="checkbox" id="suspend-until-load" />
-              <label for="suspend-until-load">Suspend network activity until filters load</label>
+              <label for="suspend-until-load">Pause network until filters are ready</label>
             </div>
 
             <div class="setting-item">
@@ -111,13 +122,6 @@
         <details id="domain-rules-section">
           <summary role="button" aria-controls="domain-rules-content">Domain Filters</summary>
           <div class="section-content" id="domain-rules-content" role="region">
-            <div class="setting-info">
-              <p>
-                <strong>Rule Limits:</strong> <span id="rule-count">0</span> /
-                <span id="rule-limit">5000</span>
-              </p>
-            </div>
-
             <!-- Allowed Domains -->
             <div class="rule-group allowed">
               <h3>Allowed Domains</h3>

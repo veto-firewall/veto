@@ -32,10 +32,10 @@ async function updateRuleCount(): Promise<void> {
   const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
   const ruleLimit = ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit();
 
-  // Update rule count element
+  // Update rule count element with combined format
   const ruleCountElement = document.getElementById('rule-count');
   if (ruleCountElement) {
-    ruleCountElement.textContent = String(ruleCount);
+    ruleCountElement.textContent = `${ruleCount} / ${ruleLimit}`;
 
     // Add warning class if approaching limit
     if (ruleCount > Math.floor(ruleLimit * 0.9)) {
@@ -47,12 +47,6 @@ async function updateRuleCount(): Promise<void> {
     } else {
       ruleCountElement.classList.remove('warning', 'danger');
     }
-  }
-
-  // Update rule limit element
-  const ruleLimitElement = document.getElementById('rule-limit');
-  if (ruleLimitElement) {
-    ruleLimitElement.textContent = String(ruleLimit);
   }
 }
 

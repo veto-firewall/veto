@@ -92,7 +92,7 @@ body {
     'Helvetica Neue',
     Arial,
     sans-serif;
-  font-synthesis: none; /* Prevent synthetic bold/italic */
+  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -101,46 +101,39 @@ body {
   color: var(--text);
   line-height: var(--line-height-base);
 
-  /* Fixed width for consistency across all sections */
-  width: 630px;
-  min-width: 320px;
-  max-width: 630px;
+  /* Fixed width for consistency */
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
   overflow-x: hidden;
-
-  /* Smooth scrolling for better UX */
-  scroll-behavior: smooth;
 }
 
-/* Modern layout with logical properties */
+/* Modern layout */
 .container {
-  padding: var(--space-md);
-  width: 630px;
-  max-width: 630px;
+  padding: var(--space-sm);
+  width: 360px;
+  max-width: 360px;
   margin: 0 auto;
   box-sizing: border-box;
   overflow-x: hidden;
 }
 
-/* Header with improved accessibility */
+/* Header */
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-block-end: var(--space-lg);
-  padding: var(--space-md);
+  margin-block-end: var(--space-md);
+  padding: var(--space-sm);
   border-block-end: 1px solid var(--border);
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   gap: var(--space-sm);
   flex-wrap: wrap;
-
-  /* Sticky header with proper stacking */
   position: sticky;
   inset-block-start: 0;
   z-index: 10;
-
-  /* Improved backdrop for transparency */
   backdrop-filter: blur(8px);
   border: 1px solid var(--border);
 }
@@ -204,7 +197,7 @@ h1 {
 }
 
 h3 {
-  font-size: var(--font-size-lg);
+  font-size: 0.9rem;
   font-weight: 500;
   margin-block-end: var(--space-sm);
   line-height: var(--line-height-tight);
@@ -214,10 +207,10 @@ h3 {
 .sections {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
-/* Enhanced details/summary with better accessibility */
+/* Enhanced details/summary */
 details {
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -225,9 +218,7 @@ details {
   overflow: hidden;
   box-shadow: var(--shadow);
   transition: var(--transition);
-  margin-bottom: var(--space-md);
-
-  /* Prevent width expansion */
+  margin-bottom: var(--space-sm);
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -244,7 +235,7 @@ details[open] {
 }
 
 summary {
-  padding: var(--space-md);
+  padding: var(--space-sm);
   cursor: pointer;
   font-weight: 500;
   background: var(--card-bg);
@@ -254,8 +245,6 @@ summary {
   align-items: center;
   transition: var(--transition);
   user-select: none;
-
-  /* Prevent width expansion */
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -292,10 +281,8 @@ details[open] summary::after {
   padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   border-top: 1px solid var(--border);
-
-  /* Prevent content from expanding popup width */
   max-width: 100%;
   overflow-x: hidden;
   word-wrap: break-word;
@@ -462,13 +449,31 @@ select {
   min-width: 0; /* Allow shrinking */
 }
 
+/* Inline controls layout for license key input and button */
+.inline-controls {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.inline-controls input {
+  flex: 1;
+  width: auto;
+}
+
+.inline-controls button {
+  flex-shrink: 0;
+  margin: 0;
+}
+
 textarea {
   width: 100%;
-  min-height: 100px;
+  min-height: 224px; /* Approximately 16 lines at 0.7rem with 1.4 line-height */
   resize: vertical;
   font-family:
     'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  font-size: var(--font-size-sm);
+  font-size: 0.7rem;
+  line-height: 1.4; /* Better line spacing for readability */
 }
 
 /* Modern checkbox design */
@@ -517,24 +522,33 @@ input[type='checkbox']:focus-visible {
 
 /* Rule groups with enhanced design */
 .rule-group {
-  padding: var(--space-md);
+  padding: var(--space-sm);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  margin-block-end: var(--space-lg);
+  margin-block-end: var(--space-sm);
   transition: var(--transition);
 
   /* Entry animation */
   animation: fadeInUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-  &.allowed {
-    background: var(--allowed-bg);
-    border-color: color-mix(in srgb, var(--success) 30%, var(--border));
-  }
+.rule-group.allowed {
+  background: var(--allowed-bg);
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+}
 
-  &.blocked {
-    background: var(--blocked-bg);
-    border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
-  }
+.rule-group.blocked {
+  background: var(--blocked-bg);
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+}
+
+/* Rule group content spacing */
+.rule-group h3 {
+  margin-bottom: var(--space-xs);
+}
+
+.rule-group textarea {
+  margin-bottom: var(--space-xs);
 }
 
 .rule-actions {
@@ -542,6 +556,25 @@ input[type='checkbox']:focus-visible {
   gap: var(--space-sm);
   margin-block-start: var(--space-sm);
   flex-wrap: wrap;
+}
+
+/* Rule controls layout for inline Final Rule checkbox and action buttons */
+.rule-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.rule-controls .rule-options {
+  margin-bottom: 0;
+}
+
+.rule-controls .rule-actions {
+  margin-block-start: 0;
 }
 
 /* Enhanced country selection */
@@ -638,20 +671,19 @@ input[type='checkbox']:focus-visible {
   font-weight: 500;
 }
 
+/* Countries list layout */
 .countries-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-xs);
   padding: var(--space-sm);
   padding-left: 25px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 500px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
   border-top: 1px solid var(--border);
   opacity: 1;
   visibility: visible;
-
-  /* Prevent width expansion */
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -1024,218 +1056,5 @@ a:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-}
-
-/* Modern responsive design with container queries and logical properties */
-@media screen and (max-width: 600px) {
-  .countries-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .container {
-    padding: var(--space-sm);
-  }
-
-  header {
-    padding: var(--space-sm);
-    gap: var(--space-xs);
-  }
-
-  /* Improve header spacing on medium screens */
-  .header-right {
-    gap: var(--space-xs);
-  }
-
-  /* Better button sizing for tablets */
-  button {
-    min-inline-size: 120px;
-  }
-}
-
-@media screen and (max-width: 450px) {
-  body {
-    min-inline-size: 320px;
-  }
-
-  /* Enhanced mobile layout for Android Firefox options page */
-  .container {
-    padding: var(--space-md);
-    margin: 0;
-  }
-
-  /* Single column country list for small screens */
-  .countries-list {
-    grid-template-columns: 1fr;
-    padding-inline-start: var(--space-md);
-  }
-
-  /* Mobile-optimized header */
-  header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-sm);
-    margin-block-end: var(--space-md);
-    padding: var(--space-sm);
-  }
-
-  .header-left,
-  .header-right {
-    justify-content: center;
-  }
-
-  /* Social icons first on mobile */
-  .header-right {
-    order: -1;
-  }
-
-  .header-left {
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  /* Reset margins for mobile */
-  .logo {
-    margin-inline-end: 0;
-  }
-
-  .version {
-    margin-inline-start: 0;
-  }
-
-  /* Stack form elements vertically */
-  .setting-item,
-  .rule-options {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-sm);
-  }
-
-  .rule-actions {
-    flex-direction: column;
-    gap: var(--space-sm);
-  }
-
-  /* Full-width buttons on mobile */
-  button {
-    inline-size: 100%;
-    min-inline-size: unset;
-  }
-
-  /* Smaller social icons */
-  .social-icon img {
-    inline-size: 18px;
-    block-size: 18px;
-  }
-
-  /* Better typography scaling */
-  h1 {
-    font-size: var(--font-size-lg);
-  }
-
-  /* Improve touch targets */
-  summary,
-  .continent-title {
-    min-block-size: 48px;
-  }
-}
-
-/* Enhanced touch interface for mobile devices */
-@media (hover: none) and (pointer: coarse) {
-  /* Minimum touch targets per WCAG guidelines */
-  button,
-  .social-icon,
-  summary,
-  .continent-title,
-  input[type='checkbox'],
-  a {
-    min-block-size: 44px;
-  }
-
-  button,
-  summary,
-  .continent-title {
-    min-inline-size: 44px;
-  }
-
-  .social-icon {
-    padding: var(--space-sm);
-    min-inline-size: 44px;
-    border-radius: var(--radius);
-  }
-
-  /* Enhanced spacing for touch interfaces */
-  .setting-item,
-  .rule-options {
-    gap: var(--space-md);
-    margin-block-end: var(--space-sm);
-  }
-
-  /* Larger, more accessible checkboxes */
-  input[type='checkbox'] {
-    inline-size: 24px;
-    block-size: 24px;
-    border-width: 3px;
-  }
-
-  input[type='checkbox']:checked::before {
-    inset-inline-start: 6px;
-    inset-block-start: 2px;
-    inline-size: 7px;
-    block-size: 13px;
-    border-width: 0 3px 3px 0;
-  }
-
-  /* Better button spacing */
-  .rule-actions {
-    gap: var(--space-md);
-  }
-
-  /* Improved form field touch targets */
-  input[type='text'],
-  select,
-  textarea {
-    min-block-size: 48px;
-    font-size: max(16px, var(--font-size-base)); /* Prevent zoom on iOS */
-  }
-
-  /* Enhanced continent/country interaction */
-  .continent-title {
-    padding: var(--space-md);
-    font-size: var(--font-size-base);
-  }
-
-  .checkbox-container {
-    padding: var(--space-sm);
-  }
-
-  .expansion-trigger {
-    padding: var(--space-sm);
-    min-block-size: 44px; /* Larger touch target for mobile */
-  }
-
-  .continent-name {
-    font-size: var(--font-size-base);
-  }
-
-  .country-item {
-    padding: var(--space-xs);
-    border-radius: var(--radius-small);
-    min-block-size: 36px;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --border: currentColor;
-    --shadow: none;
-  }
-
-  button,
-  input,
-  select,
-  textarea {
-    border: 2px solid currentColor;
   }
 }
