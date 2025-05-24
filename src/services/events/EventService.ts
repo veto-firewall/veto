@@ -67,8 +67,20 @@ export class EventService implements IService {
     this.setupMessageListener();
     this.setupWebRequestListeners();
     this.setupBrowserShutdownListener();
+    this.setupAndroidSupport();
 
     return Promise.resolve();
+  }
+
+  /**
+   * Setup Android support - open popup as full page when clicked on mobile
+   */
+  private setupAndroidSupport(): void {
+    browser.action.onClicked.addListener(() => {
+      void browser.tabs.create({
+        url: browser.runtime.getURL('popup.html')
+      });
+    });
   }
 
   /**
