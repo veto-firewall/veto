@@ -78,7 +78,7 @@ export class EventService implements IService {
   private setupAndroidSupport(): void {
     browser.action.onClicked.addListener(() => {
       void browser.tabs.create({
-        url: browser.runtime.getURL('popup.html')
+        url: browser.runtime.getURL('popup.html'),
       });
     });
   }
