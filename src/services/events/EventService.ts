@@ -8,8 +8,9 @@ import type {
   MsgSaveSettings,
   MsgSaveRules,
   MsgExportRules,
+  MsgParseRules,
 } from '../types';
-import type { Settings, RuleSet } from '../types';
+import type { Settings, RuleSet, Rule } from '../types';
 import { ServiceFactory } from '../ServiceFactory';
 
 // Type-only imports for better tree-shaking
@@ -170,6 +171,12 @@ export class EventService implements IService {
 
       case 'exportRules':
         return this.handleExportMessages(message);
+
+      case 'getRuleLimit':
+        return this.handleGetRuleLimit();
+
+      case 'parseRules':
+        return this.handleParseRules(message);
 
       default: {
         // The message is of type 'never' at this point due to exhaustive type checking
@@ -357,6 +364,38 @@ export class EventService implements IService {
     }
 
     return await this.ruleService.exportRules(ruleType, msgExportRules.includeComments || false);
+  }
+
+  /**
+   * Handle getRuleLimit message
+   * @returns The maximum number of rules allowed by the browser
+   */
+  private handleGetRuleLimit(): number {
+    const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
+    return declarativeRuleService.getRuleLimit();
+  }
+
+  /**
+   * Handle parseRules message
+   * @param message - Message to handle
+   * @returns Promise resolving to parsed rules
+   */
+  private handleParseRules(message: ExtensionMsg): Rule[] {
+    if (message.type !== 'parseRules') {
+      throw new Error(`Invalid parse rules message type: ${message.type}`);
+    }
+
+    const msgParseRules = message as MsgParseRules;
+
+    if (['domain', 'url', 'regex', 'ip', 'asn', 'tracking'].includes(msgParseRules.ruleType)) {
+      return this.ruleService.parseRules(
+        msgParseRules.ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
+        msgParseRules.rulesText,
+        msgParseRules.actionType as 'allow' | 'block' | 'redirect',
+        msgParseRules.isTerminating,
+      );
+    }
+    return [];
   }
 
   /**

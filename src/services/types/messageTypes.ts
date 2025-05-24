@@ -82,6 +82,28 @@ export interface MsgSetCountryLookupCache extends MessageBase {
 }
 
 /**
+ * Message to get rule limit
+ */
+export interface MsgGetRuleLimit extends MessageBase {
+  type: 'getRuleLimit';
+}
+
+/**
+ * Message to parse rules
+ */
+export interface MsgParseRules extends MessageBase {
+  type: 'parseRules';
+  /** Type of rule to parse */
+  ruleType: string;
+  /** Text content of rules */
+  rulesText: string;
+  /** Action for the rules */
+  actionType: string;
+  /** Whether rules are terminating */
+  isTerminating: boolean;
+}
+
+/**
  * Union of all extension message types
  */
 export type ExtensionMsg =
@@ -92,7 +114,9 @@ export type ExtensionMsg =
   | MsgExportRules
   | MsgClearCache
   | MsgGetCountryLookupCache
-  | MsgSetCountryLookupCache;
+  | MsgSetCountryLookupCache
+  | MsgGetRuleLimit
+  | MsgParseRules;
 
 /**
  * Response type for extension messages
@@ -113,4 +137,8 @@ export type MsgResponse<T extends ExtensionMsg> = T extends MsgGetSettings
               ? Record<string, Record<string, Record<string, string>> | Record<string, string>>
               : T extends MsgSetCountryLookupCache
                 ? { success: boolean }
-                : never;
+                : T extends MsgGetRuleLimit
+                  ? number
+                  : T extends MsgParseRules
+                    ? import('./ruleTypes').Rule[]
+                    : never;

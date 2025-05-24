@@ -10,7 +10,6 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
-import { ServiceFactory } from '../services/ServiceFactory';
 
 // Import countries data types for typechecking
 import type {
@@ -30,7 +29,9 @@ const toast = new Toast();
 async function updateRuleCount(): Promise<void> {
   const result = await browser.storage.local.get('ruleCount');
   const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
-  const ruleLimit = ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit();
+
+  // Get rule limit from background script instead of accessing ServiceFactory directly
+  const ruleLimit = (await browser.runtime.sendMessage({ type: 'getRuleLimit' })) as number;
 
   // Update rule count element with combined format
   const ruleCountElement = document.getElementById('rule-count');
@@ -552,7 +553,7 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
   const rulesText = textarea.value;
 
   // Parse rules
-  const newRules = parseRulesForType(ruleType, rulesText, actionType, isTerminating);
+  const newRules = await parseRulesForType(ruleType, rulesText, actionType, isTerminating);
 
   // Update rules in the rules object
   updateRulesInStore(baseId, newRules, rules);
@@ -589,10 +590,9 @@ async function saveRulesToBackground(): Promise<void> {
     const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
 
     if (ruleCount > 4500) {
-      toast.show(
-        `Warning: Using ${ruleCount}/${ServiceFactory.getInstance().getDeclarativeRuleService().getRuleLimit()} rules`,
-        'info',
-      );
+      // Get rule limit from background script instead of accessing ServiceFactory directly
+      const ruleLimit = (await browser.runtime.sendMessage({ type: 'getRuleLimit' })) as number;
+      toast.show(`Warning: Using ${ruleCount}/${ruleLimit} rules`, 'info');
     }
   } catch (error) {
     void error;

@@ -1,5 +1,4 @@
 import type { Rule, RuleSet } from '../../services/types';
-import { ServiceFactory } from '../../services/ServiceFactory';
 
 /**
  * Parses rules based on their type
@@ -10,20 +9,22 @@ import { ServiceFactory } from '../../services/ServiceFactory';
  * @param isTerminating - Whether rules are terminating
  * @returns Array of parsed rules
  */
-export function parseRulesForType(
+export async function parseRulesForType(
   ruleType: string,
   rulesText: string,
   actionType: string,
   isTerminating: boolean,
-): Rule[] {
+): Promise<Rule[]> {
   if (['domain', 'url', 'regex', 'ip', 'asn', 'tracking'].includes(ruleType)) {
-    const ruleService = ServiceFactory.getInstance().getRuleService();
-    return ruleService.parseRules(
-      ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
-      rulesText,
-      actionType as 'allow' | 'block' | 'redirect',
-      isTerminating,
-    );
+    // Use background script to parse rules instead of accessing ServiceFactory directly
+    const rules = (await browser.runtime.sendMessage({
+      type: 'parseRules',
+      ruleType: ruleType,
+      rulesText: rulesText,
+      actionType: actionType,
+      isTerminating: isTerminating,
+    })) as Rule[];
+    return rules;
   }
   return [];
 }
