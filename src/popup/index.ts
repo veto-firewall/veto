@@ -104,7 +104,9 @@ function initSectionExpansion(): void {
     settings.sectionStates = {
       'settings-section': false,
       'basic-rules-section': true,
-      'dnr-rules-section': true,
+      'domain-rules-section': true,
+      'url-rules-section': true,
+      'tracking-rules-section': true,
       'ip-rules-section': true,
       'asn-rules-section': true,
       'geoip-section': true,
@@ -257,31 +259,48 @@ function createCountryCheckboxes(
 function createContinentHeader(continentCode: string, continentName: string): HTMLDivElement {
   const continentHeader = document.createElement('div');
   continentHeader.className = 'continent-title';
-  continentHeader.setAttribute('role', 'button');
-  continentHeader.setAttribute('aria-expanded', 'false');
-  continentHeader.setAttribute('tabindex', '0');
+
+  // Create checkbox container (only checkbox and its label)
+  const checkboxContainer = document.createElement('div');
+  checkboxContainer.className = 'checkbox-container';
 
   const continentCheckbox = document.createElement('input');
   continentCheckbox.type = 'checkbox';
   continentCheckbox.id = `continent-${continentCode}`;
   continentCheckbox.dataset.continent = continentCode;
 
-  // Stop propagation to prevent toggling when clicking the checkbox
-  continentCheckbox.addEventListener('click', function (e) {
-    e.stopPropagation();
-  });
+  const checkboxLabel = document.createElement('label');
+  checkboxLabel.htmlFor = `continent-${continentCode}`;
+  checkboxLabel.className = 'checkbox-label';
+  checkboxLabel.setAttribute('aria-label', `Select all countries in ${continentName}`);
+  checkboxLabel.textContent = ''; // Empty label, just for clicking the checkbox
 
-  const continentLabel = document.createElement('label');
-  continentLabel.htmlFor = `continent-${continentCode}`;
-  continentLabel.textContent = continentName;
+  checkboxContainer.appendChild(continentCheckbox);
+  checkboxContainer.appendChild(checkboxLabel);
 
-  // Stop propagation to prevent toggling when clicking the label
-  continentLabel.addEventListener('click', function (e) {
-    e.stopPropagation();
-  });
+  // Create expansion trigger area (continent name)
+  const expansionTrigger = document.createElement('div');
+  expansionTrigger.className = 'expansion-trigger';
+  expansionTrigger.setAttribute('role', 'button');
+  expansionTrigger.setAttribute('aria-expanded', 'false');
+  expansionTrigger.setAttribute('tabindex', '0');
+  expansionTrigger.setAttribute('aria-label', `Expand ${continentName} countries`);
 
-  continentHeader.appendChild(continentCheckbox);
-  continentHeader.appendChild(continentLabel);
+  // Add expand/collapse icon
+  const expandIcon = document.createElement('span');
+  expandIcon.className = 'expand-icon';
+  expandIcon.setAttribute('aria-hidden', 'true');
+  expandIcon.textContent = '▶';
+
+  const continentNameSpan = document.createElement('span');
+  continentNameSpan.className = 'continent-name';
+  continentNameSpan.textContent = continentName;
+
+  expansionTrigger.appendChild(continentNameSpan);
+  expansionTrigger.appendChild(expandIcon);
+
+  continentHeader.appendChild(checkboxContainer);
+  continentHeader.appendChild(expansionTrigger);
 
   return continentHeader;
 }
@@ -363,24 +382,35 @@ function setupContinentToggleEvents(
   continentDiv: HTMLDivElement,
   countriesDiv: HTMLDivElement,
 ): void {
-  // Add click event to continent header to toggle expansion
-  continentHeader.addEventListener('click', function () {
+  // Find the expansion trigger element within the continent header
+  const expansionTrigger = continentHeader.querySelector('.expansion-trigger') as HTMLDivElement;
+  const expandIcon = expansionTrigger?.querySelector('.expand-icon');
+
+  if (!expansionTrigger) {
+    console.error('Expansion trigger not found in continent header');
+    return;
+  }
+
+  // Add click event to expansion trigger only
+  expansionTrigger.addEventListener('click', function () {
     if (continentDiv.classList.contains('collapsed')) {
       continentDiv.classList.remove('collapsed');
-      continentHeader.setAttribute('aria-expanded', 'true');
+      expansionTrigger.setAttribute('aria-expanded', 'true');
       countriesDiv.setAttribute('aria-hidden', 'false');
+      if (expandIcon) expandIcon.textContent = '▼';
     } else {
       continentDiv.classList.add('collapsed');
-      continentHeader.setAttribute('aria-expanded', 'false');
+      expansionTrigger.setAttribute('aria-expanded', 'false');
       countriesDiv.setAttribute('aria-hidden', 'true');
+      if (expandIcon) expandIcon.textContent = '▶';
     }
   });
 
-  // Add keyboard accessibility
-  continentHeader.addEventListener('keydown', function (event) {
+  // Add keyboard accessibility to expansion trigger
+  expansionTrigger.addEventListener('keydown', function (event) {
     if ((event as KeyboardEvent).key === 'Enter' || (event as KeyboardEvent).key === ' ') {
       event.preventDefault();
-      continentHeader.click();
+      expansionTrigger.click();
     }
   });
 }

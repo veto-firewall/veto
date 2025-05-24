@@ -568,37 +568,74 @@ input[type='checkbox']:focus-visible {
   align-items: center;
   gap: var(--space-sm);
   background: var(--card-bg);
-  cursor: pointer;
   user-select: none;
   transition: var(--transition);
   min-block-size: 44px; /* Touch target */
 }
 
-.continent-title:hover {
-  background: var(--bg);
+/* Checkbox container - isolated area for checkbox selection */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
 }
 
-.continent-title:focus-visible {
+.checkbox-container:hover {
+  background: var(--bg-hover);
+}
+
+.checkbox-container input[type='checkbox'] {
+  margin: 0;
+}
+
+.checkbox-container .checkbox-label {
+  cursor: pointer;
+  min-width: 16px;
+  min-height: 16px;
+  display: block;
+}
+
+/* Expansion trigger - separate clickable area for expanding/collapsing */
+.expansion-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  min-block-size: 32px;
+}
+
+.expansion-trigger:hover {
+  background: var(--bg-hover);
+}
+
+.expansion-trigger:focus-visible {
   background: var(--bg);
   outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
 
-/* Custom disclosure triangle */
-.continent-title::after {
-  content: '▼';
+.expand-icon {
   font-size: 0.625rem;
-  margin-inline-start: auto;
   transition: var(--transition);
   color: var(--text-secondary);
+  min-width: 12px;
+  text-align: center;
 }
 
-.continent-title:hover::after {
+.expansion-trigger:hover .expand-icon {
   color: var(--primary);
 }
 
-.continent-group.collapsed .continent-title::after {
-  transform: rotate(-90deg);
+.continent-name {
+  flex: 1;
+  font-weight: 500;
 }
 
 .countries-list {
@@ -1165,6 +1202,19 @@ a:focus-visible {
   /* Enhanced continent/country interaction */
   .continent-title {
     padding: var(--space-md);
+    font-size: var(--font-size-base);
+  }
+
+  .checkbox-container {
+    padding: var(--space-sm);
+  }
+
+  .expansion-trigger {
+    padding: var(--space-sm);
+    min-block-size: 44px; /* Larger touch target for mobile */
+  }
+
+  .continent-name {
     font-size: var(--font-size-base);
   }
 
