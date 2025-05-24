@@ -216,6 +216,10 @@ export class EventService implements IService {
           msgSaveSettings.settings.suspendUntilFiltersLoad;
         const newSuspendSetting = msgSaveSettings.settings.suspendUntilFiltersLoad;
 
+        // Check if MaxMind license key changed
+        const maxMindLicenseKeyChanged =
+          this.settings.maxmind.licenseKey !== msgSaveSettings.settings.maxmind.licenseKey;
+
         // Update settings
         this.settings = msgSaveSettings.settings;
         await this.storageService.saveSettings(this.settings);
@@ -227,6 +231,30 @@ export class EventService implements IService {
           // Update the suspend rule for the next browser startup
           await declarativeRuleService.updateSuspendSetting(newSuspendSetting);
           console.log(`Suspend until filters load setting changed to: ${newSuspendSetting}`);
+        }
+
+        // Handle MaxMind license key change
+        if (maxMindLicenseKeyChanged) {
+          console.log('MaxMind license key changed, refreshing services and databases');
+          try {
+            // Update MaxMind service configuration
+            const maxMindService = ServiceFactory.getInstance().getMaxMindService();
+            await maxMindService.updateConfig({
+              licenseKey: msgSaveSettings.settings.maxmind.licenseKey,
+              lastDownload: this.settings.maxmind.lastDownload,
+            });
+
+            // Refresh MaxMind service and related components
+            const refreshSuccess = await maxMindService.refreshService();
+
+            if (refreshSuccess) {
+              console.log('MaxMind services refreshed successfully');
+            } else {
+              console.warn('MaxMind services refresh completed with warnings');
+            }
+          } catch (error) {
+            console.error('Error refreshing MaxMind services:', error);
+          }
         }
 
         // Set up rules with new settings

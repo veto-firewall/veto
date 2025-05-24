@@ -278,6 +278,16 @@ export class RuleService implements IRuleService {
   }
 
   /**
+   * Clear all cached rule processors
+   * This forces the creation of new processors with fresh service instances
+   * Useful when underlying services (like MaxMind) have been updated
+   */
+  clearProcessorCache(): void {
+    console.log('Clearing rule processor cache to refresh service dependencies');
+    this.processors.clear();
+  }
+
+  /**
    * Get filter file content
    * @param fileName - Name of the filter file
    * @returns Promise resolving to file content

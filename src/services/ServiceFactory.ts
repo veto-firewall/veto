@@ -286,4 +286,22 @@ export class ServiceFactory {
     const initPromises = Array.from(this.services.values()).map(service => service.initialize());
     await Promise.all(initPromises);
   }
+
+  /**
+   * Refresh MaxMind-related services after configuration changes
+   * This ensures that rule processors get updated service instances with new configuration
+   * @returns Promise that resolves when refresh is complete
+   */
+  public async refreshMaxMindServices(): Promise<boolean> {
+    console.log('Refreshing MaxMind-related services after configuration change');
+
+    try {
+      // Delegate to MaxMind service's own refresh method
+      const maxMindService = this.getMaxMindService();
+      return await maxMindService.refreshService();
+    } catch (error) {
+      console.error('Error during MaxMind services refresh:', error);
+      return false;
+    }
+  }
 }

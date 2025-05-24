@@ -139,6 +139,56 @@ export class MaxMindService implements IService {
   }
 
   /**
+   * Reload databases when configuration changes
+   * This clears existing readers and attempts to load databases with new configuration
+   * @returns Promise resolving to true if databases were loaded successfully
+   */
+  async reloadDatabases(): Promise<boolean> {
+    console.log('Reloading MaxMind databases...');
+
+    // Clear existing readers to force reload
+    this.geoIpReader = null;
+    this.asnReader = null;
+
+    // Clear MaxMind-related caches
+    this.cacheService.geoIpCache.clear();
+    this.cacheService.asnCache.clear();
+
+    if (!this.config || !this.config.licenseKey) {
+      console.log('No license key available for database reload');
+      return false;
+    }
+
+    try {
+      // First try to load existing databases from storage
+      const [geoLoaded, asnLoaded] = await Promise.all([
+        this.loadGeoIpDatabase(),
+        this.loadAsnDatabase(),
+      ]);
+
+      if (geoLoaded && asnLoaded) {
+        console.log('Successfully reloaded databases from storage');
+        return true;
+      }
+
+      // If databases not in storage or failed to load, download fresh ones
+      console.log('Databases not available in storage, downloading...');
+      const downloadSuccess = await this.downloadDatabases();
+
+      if (downloadSuccess) {
+        console.log('Successfully downloaded and loaded new databases');
+      } else {
+        console.error('Failed to download databases after configuration change');
+      }
+
+      return downloadSuccess;
+    } catch (error) {
+      console.error('Error during database reload:', error);
+      return false;
+    }
+  }
+
+  /**
    * Load the GeoIP database from storage into memory
    * @returns Promise resolving to true if successful
    */
@@ -535,6 +585,34 @@ export class MaxMindService implements IService {
     }
 
     return selectedFile;
+  }
+
+  /**
+   * Refresh MaxMind service and related components after configuration changes
+   * This method coordinates the refresh of databases and dependent services
+   * @returns Promise resolving to true if refresh was successful
+   */
+  async refreshService(): Promise<boolean> {
+    console.log('Refreshing MaxMind service after configuration change');
+
+    try {
+      // Reload databases with new configuration
+      const reloadSuccess = await this.reloadDatabases();
+
+      if (!reloadSuccess) {
+        console.warn('MaxMind database reload failed, but continuing with processor refresh');
+      }
+
+      // Clear rule processor cache to force recreation with fresh service instances
+      const ruleService = ServiceFactory.getInstance().getRuleService();
+      ruleService.clearProcessorCache();
+
+      console.log('MaxMind service refresh completed successfully');
+      return reloadSuccess;
+    } catch (error) {
+      console.error('Error during MaxMind service refresh:', error);
+      return false;
+    }
   }
 
   /**
