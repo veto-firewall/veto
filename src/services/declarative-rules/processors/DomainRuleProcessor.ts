@@ -117,6 +117,7 @@ export class DomainRuleProcessor extends BaseProcessor {
         action: ruleAction,
         condition: {
           regexFilter: `.*://(.*\\.)?${pattern}/.*`,
+          resourceTypes: ALL_RESOURCE_TYPES,
         },
       });
 
