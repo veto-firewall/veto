@@ -136,6 +136,7 @@ jobs:
 
       - name: Submit to Mozilla Add-ons
         if: ${{ github.event.inputs.channel != 'do-not-publish' }}
+        continue-on-error: true
         env:
           WEB_EXT_API_KEY: ${{ secrets.MOZILLA_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
