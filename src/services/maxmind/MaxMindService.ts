@@ -1,15 +1,15 @@
 /**
- * MaxMindService handles all operations related to MaxMind GeoIP databases
- * Manages downloading, loading, and querying MaxMind GeoLite2 databases
+ * MaxMindService handles GeoIP and ASN lookups
+ * Clean implementation with static imports
  */
 import type { IService } from '../types';
 import { StorageService } from '../storage/StorageService';
 import { ServiceFactory } from '../ServiceFactory';
 import { isValid as _isValid } from 'ipaddr.js';
-// Import types only for TypeScript - Reader will be dynamically imported
-import type { Reader as _Reader } from 'mmdb-lib';
+// Static imports instead of dynamic imports
+import { Reader } from 'mmdb-lib';
 import type { CountryResponse, AsnResponse } from 'mmdb-lib/lib/reader/response';
-import type * as tarStream from 'tar-stream';
+import * as tarStream from 'tar-stream';
 import type { Readable } from 'stream';
 
 /**
@@ -139,49 +139,6 @@ export class MaxMindService implements IService {
   }
 
   /**
-   * Reload databases when configuration changes
-   * This clears existing readers and attempts to load databases with new configuration
-   * @returns Promise resolving to true if databases were loaded successfully
-   */
-  async reloadDatabases(): Promise<boolean> {
-    // Clear existing readers to force reload
-    this.geoIpReader = null;
-    this.asnReader = null;
-
-    // Clear MaxMind-related caches
-    this.cacheService.geoIpCache.clear();
-    this.cacheService.asnCache.clear();
-
-    if (!this.config || !this.config.licenseKey) {
-      return false;
-    }
-
-    try {
-      // First try to load existing databases from storage
-      const [geoLoaded, asnLoaded] = await Promise.all([
-        this.loadGeoIpDatabase(),
-        this.loadAsnDatabase(),
-      ]);
-
-      if (geoLoaded && asnLoaded) {
-        return true;
-      }
-
-      // If databases not in storage or failed to load, download fresh ones
-      const downloadSuccess = await this.downloadDatabases();
-
-      if (!downloadSuccess) {
-        console.error('Failed to download databases after configuration change');
-      }
-
-      return downloadSuccess;
-    } catch (error) {
-      console.error('Error during database reload:', error);
-      return false;
-    }
-  }
-
-  /**
    * Load the GeoIP database from storage into memory
    * @returns Promise resolving to true if successful
    */
@@ -202,10 +159,7 @@ export class MaxMindService implements IService {
       // Use the Buffer polyfill to handle ArrayBuffer
       const buffer = Buffer.from(geoipDatabase);
 
-      // Dynamically import the Reader class to reduce initial bundle size
-      const { Reader } = await import('mmdb-lib');
-
-      // Create reader with the buffer
+      // Use static import - Reader is already imported
       this.geoIpReader = new Reader<CountryResponse>(buffer as Buffer<ArrayBufferLike>);
 
       return true;
@@ -237,10 +191,7 @@ export class MaxMindService implements IService {
       // Convert ArrayBuffer to Buffer for mmdb-lib
       const buffer = Buffer.from(asnDatabase);
 
-      // Dynamically import the Reader class to reduce initial bundle size
-      const { Reader } = await import('mmdb-lib');
-
-      // Create reader
+      // Use static import - Reader is already imported
       this.asnReader = new Reader<AsnResponse>(buffer as Buffer<ArrayBufferLike>);
 
       return true;
@@ -367,20 +318,6 @@ export class MaxMindService implements IService {
           asnStatus: asnResponse.status,
           asnStatusText: asnResponse.statusText,
         });
-
-        // Try to get more error information
-        try {
-          const errorTexts = await Promise.all([
-            countryResponse.text().catch(() => 'Unable to get error details'),
-            asnResponse.text().catch(() => 'Unable to get error details'),
-          ]);
-          console.error('Error details:', {
-            countryResponseText: errorTexts[0],
-            asnResponseText: errorTexts[1],
-          });
-        } catch (err) {
-          console.error('Could not retrieve error details:', err);
-        }
         return false;
       }
 
@@ -388,17 +325,10 @@ export class MaxMindService implements IService {
       const asnArrayBuffer = await asnResponse.arrayBuffer();
 
       const countryData = await this.extractMMDBFromTarGz(countryArrayBuffer, 'Country');
-      if (!countryData) {
-        console.error('Failed to extract Country database - extraction returned null');
-      }
-
       const asnData = await this.extractMMDBFromTarGz(asnArrayBuffer, 'ASN');
-      if (!asnData) {
-        console.error('Failed to extract ASN database - extraction returned null');
-      }
 
       if (!countryData || !asnData) {
-        console.error('One or both database extractions failed');
+        console.error('Failed to extract database files');
         return false;
       }
 
@@ -430,15 +360,12 @@ export class MaxMindService implements IService {
     databaseType?: string,
   ): Promise<ArrayBuffer | null> {
     try {
-      // Import the tar-stream library
-      const tar = await import('tar-stream');
-
       // Step 1: Decompress the gzip stream
       const ds = new DecompressionStream('gzip');
       const decompressedStream = new Response(arrayBuffer).body!.pipeThrough(ds);
 
       // Step 2: Extract and process files from the tar archive
-      const mmdbFiles = await this.extractTarFiles(tar, decompressedStream);
+      const mmdbFiles = await this.extractTarFiles(decompressedStream);
 
       if (mmdbFiles.length === 0) {
         console.error('No MMDB files found in archive');
@@ -452,23 +379,18 @@ export class MaxMindService implements IService {
       return selectedFile.data.buffer;
     } catch (e) {
       console.error('Error extracting MMDB from tar.gz:', e);
-      console.error(e instanceof Error ? e.stack : String(e));
       return null;
     }
   }
 
   /**
    * Extract files from a tar archive stream
-   * @param tar - Tar stream library
    * @param stream - Decompressed stream
    * @returns Promise resolving to array of extracted files
    */
-  private async extractTarFiles(
-    tar: typeof import('tar-stream'),
-    stream: ReadableStream<Uint8Array>,
-  ): Promise<Array<MMDBFile>> {
-    // Create extractor
-    const extractor = tar.extract();
+  private async extractTarFiles(stream: ReadableStream<Uint8Array>): Promise<Array<MMDBFile>> {
+    // Create extractor - use static import
+    const extractor = tarStream.extract();
     const mmdbFiles: Array<MMDBFile> = [];
 
     // Set up promise for extraction completion
@@ -555,23 +477,34 @@ export class MaxMindService implements IService {
 
   /**
    * Refresh MaxMind service and related components after configuration changes
-   * This method coordinates the refresh of databases and dependent services
    * @returns Promise resolving to true if refresh was successful
    */
   async refreshService(): Promise<boolean> {
     try {
-      // Reload databases with new configuration
-      const reloadSuccess = await this.reloadDatabases();
+      // Clear existing readers to force reload
+      this.geoIpReader = null;
+      this.asnReader = null;
 
-      if (!reloadSuccess) {
-        console.warn('MaxMind database reload failed, but continuing with processor refresh');
+      // Clear MaxMind-related caches
+      this.cacheService.geoIpCache.clear();
+      this.cacheService.asnCache.clear();
+
+      if (!this.config || !this.config.licenseKey) {
+        return false;
       }
 
-      // Clear rule processor cache to force recreation with fresh service instances
-      const ruleService = ServiceFactory.getInstance().getRuleService();
-      ruleService.clearProcessorCache();
+      // First try to load existing databases from storage
+      const [geoLoaded, asnLoaded] = await Promise.all([
+        this.loadGeoIpDatabase(),
+        this.loadAsnDatabase(),
+      ]);
 
-      return reloadSuccess;
+      if (geoLoaded && asnLoaded) {
+        return true;
+      }
+
+      // If databases not in storage or failed to load, download fresh ones
+      return await this.downloadDatabases();
     } catch (error) {
       console.error('Error during MaxMind service refresh:', error);
       return false;

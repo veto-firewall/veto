@@ -11,7 +11,8 @@ import {
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
 
-// Import countries data types for typechecking
+// Static import of countries data
+import { countries, continents } from 'countries-list';
 import type {
   ICountry as _ICountry,
   TCountries,
@@ -64,9 +65,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initExtensionInfo();
     await updateRuleCount();
 
-    // Initialize UI event handlers
+    // Initialize UI event handlers (for settings and export buttons)
     setupUIEvents(settings, rules, saveSettingsToBackground, saveRulesToBackground);
-    setupEventListeners();
+
+    // Setup rule save event listeners (for rule parsing and saving)
+    setupRuleSaveEventListeners();
+
+    // Setup GeoIP event listeners for continent/country checkboxes
+    setupGeoipEventListeners();
 
     document.body.classList.remove('loading');
   } catch (error) {
@@ -307,9 +313,7 @@ async function setupCountryList(): Promise<void> {
   const geoipContinentsDiv = document.getElementById('geoip-continents');
   if (!geoipContinentsDiv) return;
 
-  // Dynamically import countries data
-  const { countries, continents } = await import('countries-list');
-
+  // Use statically imported countries data
   // Process countries data and organize by continent
   const countriesByContinent = processCountriesData(countries);
   const popupService = PopupService.getInstance();
@@ -410,11 +414,8 @@ function setupContinentToggleEvents(
   });
 }
 
-// Set up event listeners
-function setupEventListeners(): void {
-  // Settings
-  document.getElementById('save-maxmind')?.addEventListener('click', saveMaxmindSettings);
-
+// Setup rule save event listeners
+function setupRuleSaveEventListeners(): void {
   // DNR Rules
   setupRuleEventListeners('allowed-domains', 'domain', 'allow');
   setupRuleEventListeners('blocked-domains', 'domain', 'block');
@@ -432,12 +433,9 @@ function setupEventListeners(): void {
   // ASN Rules
   setupRuleEventListeners('allowed-asns', 'asn', 'allow');
   setupRuleEventListeners('blocked-asns', 'asn', 'block');
-
-  // GeoIP Rules
-  setupGeoipEventListeners();
 }
 
-// Set up event listeners for rules
+// Set up event listeners for specific rule types
 function setupRuleEventListeners(baseId: string, type: string, action: string): void {
   const saveBtn = document.getElementById(`save-${baseId}`);
   const exportBtn = document.getElementById(`export-${baseId}`);
@@ -528,13 +526,6 @@ async function updateContinentCheckbox(continentCode: string): Promise<void> {
   const allSelected = allCountries.every(countryCode => rules.blockedCountries[countryCode]);
 
   continentCheckbox.checked = allSelected;
-}
-
-// Save MaxMind settings
-async function saveMaxmindSettings(): Promise<void> {
-  const licenseKeyInput = document.getElementById('license-key') as HTMLInputElement;
-  settings.maxmind.licenseKey = licenseKeyInput.value.trim();
-  await saveSettingsToBackground();
 }
 
 /**

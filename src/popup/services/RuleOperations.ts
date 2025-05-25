@@ -1,40 +1,52 @@
+/**
+ * Rule operations for handling textarea content and filter file loading
+ * Clean implementation with proper extension resource loading
+ */
 import type { Rule, RuleSet } from '../../services/types';
 
 /**
- * Parses rules based on their type
+ * Parse rules for a specific rule type
  *
- * @param ruleType - Type of rule to parse
- * @param rulesText - Text content of rules
- * @param actionType - Action for the rules
- * @param isTerminating - Whether rules are terminating
- * @returns Array of parsed rules
+ * @param ruleType - The type of rule to parse
+ * @param input - The input string to parse
+ * @param actionType - The action type for the rules
+ * @param isTerminating - Whether the rules are terminating
+ * @returns Promise resolving to an array of rules
  */
 export async function parseRulesForType(
   ruleType: string,
-  rulesText: string,
+  input: string,
   actionType: string,
   isTerminating: boolean,
 ): Promise<Rule[]> {
-  if (['domain', 'url', 'regex', 'ip', 'asn', 'tracking'].includes(ruleType)) {
-    // Use background script to parse rules instead of accessing ServiceFactory directly
-    const rules = (await browser.runtime.sendMessage({
+  try {
+    const response: unknown = await browser.runtime.sendMessage({
       type: 'parseRules',
       ruleType: ruleType,
-      rulesText: rulesText,
+      rulesText: input,
       actionType: actionType,
       isTerminating: isTerminating,
-    })) as Rule[];
-    return rules;
+    });
+
+    // Validate response is an array before returning
+    if (Array.isArray(response)) {
+      return response as Rule[];
+    }
+
+    console.warn('Invalid response from parseRules:', response);
+    return [];
+  } catch (error) {
+    console.error('Error parsing rules:', error);
+    return [];
   }
-  return [];
 }
 
 /**
- * Updates the rules in the rule store
+ * Update rules in the store based on the rule type
  *
- * @param baseId - ID of the rule element
- * @param newRules - New rules to store
- * @param rules - The rule set to update
+ * @param baseId - The base ID of the rule element
+ * @param newRules - The new rules to store
+ * @param rules - The rules object to update
  */
 export function updateRulesInStore(baseId: string, newRules: Rule[], rules: RuleSet): void {
   switch (baseId) {
@@ -75,7 +87,8 @@ export function updateRulesInStore(baseId: string, newRules: Rule[], rules: Rule
 }
 
 /**
- * Populate a textarea with rules
+ * Populate a textarea with rules or filter file content
+ * Uses proper extension resource loading instead of fetch()
  *
  * @param textareaId - ID of the textarea element
  * @param ruleList - List of rules to display
@@ -90,7 +103,9 @@ export async function populateRuleTextarea(textareaId: string, ruleList: Rule[])
     // Set the terminating checkbox
     const checkboxId = `${textareaId}-terminating`;
     const checkbox = document.getElementById(checkboxId) as HTMLInputElement;
-    checkbox.checked = ruleList[0].isTerminating;
+    if (checkbox) {
+      checkbox.checked = ruleList[0].isTerminating;
+    }
   }
   // If there are no rules, try to load content from filter files
   else {
@@ -107,13 +122,17 @@ export async function populateRuleTextarea(textareaId: string, ruleList: Rule[])
       'allowed-regex': 'Regex',
       'blocked-regex': 'Regex',
       'tracking-params': 'Trackers',
+      'allowed-urls': 'URLs',
+      'blocked-urls': 'URLs',
     };
 
     // If this textarea has a matching filter file
     if (fileMap[textareaId]) {
       try {
-        // Try to fetch the file content
-        const response = await fetch(`/filters/${fileMap[textareaId]}.txt`);
+        // Use browser.runtime.getURL for proper extension resource loading
+        const fileUrl = browser.runtime.getURL(`filters/${fileMap[textareaId]}.txt`);
+        const response = await fetch(fileUrl);
+
         if (response.ok) {
           fileContent = await response.text();
           textarea.value = fileContent;
