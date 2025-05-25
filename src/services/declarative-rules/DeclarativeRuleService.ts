@@ -18,6 +18,18 @@ import {
 const SUSPEND_RULE_ID = 1;
 
 /**
+ * Rule ID range allocation for different rule types
+ * Each rule type gets its own dedicated range to prevent ID conflicts
+ */
+const RULE_ID_RANGES = {
+  basic: { multiplier: 0, offset: 2 }, // 2-4999 (offset 2 to avoid SUSPEND_RULE_ID)
+  tracking: { multiplier: 1, offset: 0 }, // 5000-9999
+  domain: { multiplier: 2, offset: 0 }, // 10000-14999
+  url: { multiplier: 3, offset: 0 }, // 15000-19999
+  regex: { multiplier: 4, offset: 0 }, // 20000-24999
+} as const;
+
+/**
  * Service for managing browser declarative network request rules
  */
 export class DeclarativeRuleService implements IDeclarativeRuleService {
@@ -40,6 +52,11 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
    * Max length of regex pattern (Firefox limitation)
    */
   private maxRegexLength = 1024;
+
+  /**
+   * Mutex to prevent concurrent rule updates
+   */
+  private ruleUpdateMutex: Promise<void> = Promise.resolve();
 
   /**
    * Rule processors
@@ -104,6 +121,17 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
   }
 
   /**
+   * Get the starting rule ID for a specific rule type based on range allocation
+   * @param ruleType - The type of rule to get the range for
+   * @returns The starting ID for this rule type
+   */
+  private getRuleIdRange(ruleType: keyof typeof RULE_ID_RANGES): number {
+    const range = RULE_ID_RANGES[ruleType];
+    const rangeSize = this.getFirefoxRuleLimit();
+    return range.multiplier * rangeSize + range.offset;
+  }
+
+  /**
    * Get the Firefox rule limit from the browser API
    * @returns The maximum number of rules allowed
    */
@@ -150,6 +178,24 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
    * @returns Promise that resolves when rules are set up
    */
   async setupRules(settings: Settings, rules: RuleSet): Promise<void> {
+    // Use mutex to prevent concurrent rule updates
+    this.ruleUpdateMutex = this.ruleUpdateMutex.then(async () => {
+      await this.setupRulesInternal(settings, rules);
+    });
+
+    return this.ruleUpdateMutex;
+  }
+
+  /**
+   * Internal implementation of rule setup (protected by mutex)
+   * @param settings - The extension settings
+   * @param rules - The ruleset containing filtering rules
+   * @returns Promise that resolves when rules are set up
+   */
+  private async setupRulesInternal(settings: Settings, rules: RuleSet): Promise<void> {
+    const startTime = Date.now();
+    console.log(`[${startTime}] Starting rule setup (protected by mutex)`);
+
     try {
       // Reset rule count before generating new rules
       this.resetRuleCount();
@@ -160,77 +206,18 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
 
       // Clear all existing session rules
       await this.clearExistingSessionRules();
+      console.log(`[${startTime}] Cleared existing session rules`);
 
-      // Use a sequential ID counter for all rules
-      let nextRuleId = 1;
-
-      // Create and collect all rule types
-      const basicProcessor = new this.processors.basic();
-      const basicRules = basicProcessor.createRules(settings, nextRuleId);
-      nextRuleId += basicRules.length || 1;
-
-      const trackingProcessor = new this.processors.tracking();
-      const trackingRules = trackingProcessor.createRules(rules, nextRuleId);
-      nextRuleId += trackingRules.length || 1;
-
-      const domainProcessor = new this.processors.domain();
-
-      // Create domain rules
-      const allowedDomainRules = domainProcessor.createDomainRules(
-        rules.allowedDomains,
-        nextRuleId,
-        'allow',
-      );
-      nextRuleId += allowedDomainRules.length || 1;
-
-      const blockedDomainRules = domainProcessor.createDomainRules(
-        rules.blockedDomains,
-        nextRuleId,
-        'block',
-      );
-      nextRuleId += blockedDomainRules.length || 1;
-
-      // Create URL rules
-      const allowedUrlRules = domainProcessor.createUrlRules(
-        rules.allowedUrls,
-        nextRuleId,
-        'allow',
-      );
-      nextRuleId += allowedUrlRules.length || 1;
-
-      const blockedUrlRules = domainProcessor.createUrlRules(
-        rules.blockedUrls,
-        nextRuleId,
-        'block',
-      );
-      nextRuleId += blockedUrlRules.length || 1;
-
-      // Create regex rules
-      const regexProcessor = new this.processors.regex();
-      const allowedRegexRules = regexProcessor.createRules(rules.allowedRegex, nextRuleId, 'allow');
-      nextRuleId += allowedRegexRules.length || 1;
-
-      const blockedRegexRules = regexProcessor.createRules(rules.blockedRegex, nextRuleId, 'block');
-      nextRuleId += blockedRegexRules.length || 1;
-
-      // Combine all rules into a single array
-      const domainAndUrlRules = [
-        ...allowedDomainRules,
-        ...blockedDomainRules,
-        ...allowedUrlRules,
-        ...blockedUrlRules,
-        ...allowedRegexRules,
-        ...blockedRegexRules,
-      ] as browser.declarativeNetRequest.Rule[];
-
-      // Combine all rule arrays
-      const sessionRules = [...basicRules, ...trackingRules, ...domainAndUrlRules];
+      // Create all rule types and combine them
+      const sessionRules = await this.createAllRules(settings, rules);
+      console.log(`[${startTime}] Created ${sessionRules.length} rules total`);
 
       // Add all the rules to the browser using session rules
       await browser.declarativeNetRequest.updateSessionRules({
         removeRuleIds: [], // Explicitly specify empty array for compatibility
         addRules: sessionRules,
       });
+      console.log(`[${startTime}] Successfully added rules to browser`);
 
       // Save current rule count to storage for the popup to display
       await browser.storage.local.set({ ruleCount: this.getRuleCount() });
@@ -242,7 +229,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       }
 
       console.log(
-        `Session rules updated successfully: ${this.getRuleCount()}/${this.getRuleLimit()} rules used`,
+        `[${startTime}] Session rules updated successfully: ${this.getRuleCount()}/${this.getRuleLimit()} rules used`,
       );
     } catch (e) {
       console.error('Failed to update rules:', e);
@@ -258,6 +245,159 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       // This prevents requests from leaking through when rules fail to load
       // The suspend rule will be removed on the next successful attempt
     }
+  }
+
+  /**
+   * Create all rule types using range-based ID allocation
+   * @param settings - The extension settings
+   * @param rules - The ruleset containing filtering rules
+   * @returns Array of all created rules
+   */
+  private async createAllRules(
+    settings: Settings,
+    rules: RuleSet,
+  ): Promise<browser.declarativeNetRequest.Rule[]> {
+    console.log('Starting rule generation with range-based ID allocation');
+
+    // Create basic and tracking rules
+    const basicRules = this.createBasicRules(settings);
+    const trackingRules = this.createTrackingRules(rules);
+
+    // Create domain and URL rules
+    const domainAndUrlRules = this.createDomainAndUrlRules(rules);
+
+    // Create regex rules
+    const regexRules = this.createRegexRules(rules);
+
+    // Combine all rule arrays
+    return [...basicRules, ...trackingRules, ...domainAndUrlRules, ...regexRules];
+  }
+
+  /**
+   * Create basic rules with range-based ID allocation
+   * @param settings - The extension settings
+   * @returns Array of basic rules
+   */
+  private createBasicRules(settings: Settings): browser.declarativeNetRequest.Rule[] {
+    const basicProcessor = new this.processors.basic();
+    const basicStartId = this.getRuleIdRange('basic');
+    const basicRules = basicProcessor.createRules(settings, basicStartId);
+    console.log(
+      `Basic rules: ${basicRules.length}, range: ${basicStartId}-${basicStartId + basicRules.length - 1}`,
+    );
+    return basicRules;
+  }
+
+  /**
+   * Create tracking rules with range-based ID allocation
+   * @param rules - The ruleset containing filtering rules
+   * @returns Array of tracking rules
+   */
+  private createTrackingRules(rules: RuleSet): browser.declarativeNetRequest.Rule[] {
+    const trackingProcessor = new this.processors.tracking();
+    const trackingStartId = this.getRuleIdRange('tracking');
+    const trackingRules = trackingProcessor.createRules(rules, trackingStartId);
+    console.log(
+      `Tracking rules: ${trackingRules.length}, range: ${trackingStartId}-${trackingStartId + trackingRules.length - 1}`,
+    );
+    return trackingRules;
+  }
+
+  /**
+   * Create domain and URL rules with range-based ID allocation
+   * @param rules - The ruleset containing filtering rules
+   * @returns Array of domain and URL rules
+   */
+  private createDomainAndUrlRules(rules: RuleSet): browser.declarativeNetRequest.Rule[] {
+    const domainProcessor = new this.processors.domain();
+
+    // Create domain rules with range-based ID allocation
+    const domainStartId = this.getRuleIdRange('domain');
+    let domainCurrentId = domainStartId;
+
+    const allowedDomainRules = domainProcessor.createDomainRules(
+      rules.allowedDomains,
+      domainCurrentId,
+      'allow',
+    );
+    domainCurrentId += allowedDomainRules.length;
+    console.log(
+      `Allowed domain rules: ${allowedDomainRules.length}, range: ${domainStartId}-${domainCurrentId - 1}`,
+    );
+
+    const blockedDomainRules = domainProcessor.createDomainRules(
+      rules.blockedDomains,
+      domainCurrentId,
+      'block',
+    );
+    domainCurrentId += blockedDomainRules.length;
+    console.log(
+      `Blocked domain rules: ${blockedDomainRules.length}, range: ${domainCurrentId - blockedDomainRules.length}-${domainCurrentId - 1}`,
+    );
+
+    // Create URL rules with range-based ID allocation
+    const urlStartId = this.getRuleIdRange('url');
+    let urlCurrentId = urlStartId;
+
+    const allowedUrlRules = domainProcessor.createUrlRules(
+      rules.allowedUrls,
+      urlCurrentId,
+      'allow',
+    );
+    urlCurrentId += allowedUrlRules.length;
+    console.log(
+      `Allowed URL rules: ${allowedUrlRules.length}, range: ${urlStartId}-${urlCurrentId - 1}`,
+    );
+
+    const blockedUrlRules = domainProcessor.createUrlRules(
+      rules.blockedUrls,
+      urlCurrentId,
+      'block',
+    );
+    urlCurrentId += blockedUrlRules.length;
+    console.log(
+      `Blocked URL rules: ${blockedUrlRules.length}, range: ${urlCurrentId - blockedUrlRules.length}-${urlCurrentId - 1}`,
+    );
+
+    return [
+      ...allowedDomainRules,
+      ...blockedDomainRules,
+      ...allowedUrlRules,
+      ...blockedUrlRules,
+    ] as browser.declarativeNetRequest.Rule[];
+  }
+
+  /**
+   * Create regex rules with range-based ID allocation
+   * @param rules - The ruleset containing filtering rules
+   * @returns Array of regex rules
+   */
+  private createRegexRules(rules: RuleSet): browser.declarativeNetRequest.Rule[] {
+    const regexProcessor = new this.processors.regex();
+    const regexStartId = this.getRuleIdRange('regex');
+    let regexCurrentId = regexStartId;
+
+    const allowedRegexRules = regexProcessor.createRules(
+      rules.allowedRegex,
+      regexCurrentId,
+      'allow',
+    );
+    regexCurrentId += allowedRegexRules.length;
+    console.log(
+      `Allowed regex rules: ${allowedRegexRules.length}, range: ${regexStartId}-${regexCurrentId - 1}`,
+    );
+
+    const blockedRegexRules = regexProcessor.createRules(
+      rules.blockedRegex,
+      regexCurrentId,
+      'block',
+    );
+    regexCurrentId += blockedRegexRules.length;
+    console.log(
+      `Blocked regex rules: ${blockedRegexRules.length}, range: ${regexCurrentId - blockedRegexRules.length}-${regexCurrentId - 1}`,
+    );
+
+    return [...allowedRegexRules, ...blockedRegexRules] as browser.declarativeNetRequest.Rule[];
   }
 
   /**
