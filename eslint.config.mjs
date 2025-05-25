@@ -128,6 +128,7 @@ export default [
       sourceType: 'commonjs',
       globals: {
         __dirname: 'readonly',
+        __filename: 'readonly',
         process: 'readonly',
         module: 'readonly',
         require: 'readonly',
