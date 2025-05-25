@@ -51,22 +51,17 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
 
     const ip = await this.networkService.resolveDomain(url.hostname);
     if (!ip) {
-      console.log(`Could not resolve IP for ${url.hostname}`);
       return null;
     }
 
-    console.log(`Checking GeoIP rules for ${url.hostname} (IP: ${ip})`);
     const country = await this.maxmindService.getCountryByIp(ip);
-    console.log(`Country lookup result for ${ip}: ${country}`);
 
     if (!country) {
-      console.log(`Could not determine country for ${ip}`);
       return null;
     }
 
     const isBlocked = this.rules.blockedCountries[country];
     if (isBlocked) {
-      console.log(`Request blocked by GeoIP rule: ${url.hostname} (Country: ${country})`);
       this.cacheCallback(cacheKey, true);
 
       if (details) {
@@ -74,8 +69,6 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
       }
 
       return { cancel: true };
-    } else {
-      console.log(`Country ${country} is not in the block list, request allowed`);
     }
 
     return null;

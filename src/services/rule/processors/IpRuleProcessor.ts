@@ -53,7 +53,6 @@ export class IpRuleProcessor extends BaseRuleProcessor {
 
     // Check if there's a terminating allow rule - these take highest precedence
     if (allowedRule && allowedRule.isTerminating) {
-      console.log(`IP ${ip} matched terminating allow rule: ${allowedRule.value}`);
       this.cacheCallback(cacheKey, false);
       return { cancel: false };
     }
@@ -64,7 +63,6 @@ export class IpRuleProcessor extends BaseRuleProcessor {
     );
 
     if (blockedRule) {
-      console.log(`IP ${ip} matched block rule: ${blockedRule.value}`);
       this.cacheCallback(cacheKey, true);
 
       if (details) {
@@ -76,7 +74,6 @@ export class IpRuleProcessor extends BaseRuleProcessor {
 
     // If we have a non-terminating allow rule and no block rule matched, allow the request
     if (allowedRule) {
-      console.log(`IP ${ip} matched non-terminating allow rule: ${allowedRule.value}`);
       this.cacheCallback(cacheKey, false);
       return { cancel: false };
     }

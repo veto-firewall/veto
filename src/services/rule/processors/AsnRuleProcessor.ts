@@ -51,16 +51,12 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
 
     const ip = await this.networkService.resolveDomain(url.hostname);
     if (!ip) {
-      console.log(`Could not resolve IP for ${url.hostname}`);
       return null;
     }
 
-    console.log(`Checking ASN rules for ${url.hostname} (IP: ${ip})`);
     const asn = await this.maxmindService.getAsnByIp(ip);
-    console.log(`ASN lookup result for ${ip}: ${asn}`);
 
     if (asn === null) {
-      console.log(`Could not determine ASN for ${ip}`);
       return null;
     }
 
@@ -69,7 +65,6 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
 
     // Check if there's a terminating allow rule - these take highest precedence
     if (allowRule && allowRule.isTerminating) {
-      console.log(`Request allowed by terminating ASN rule: ${url.hostname} (ASN: ${asn})`);
       this.cacheCallback(cacheKey, false);
       return { cancel: false };
     }
@@ -77,7 +72,6 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
     // Check for block rules - these override non-terminating allow rules
     const blockRule = this.findAsnBlockRule(asn);
     if (blockRule) {
-      console.log(`Request blocked by ASN rule: ${url.hostname} (ASN: ${asn})`);
       this.cacheCallback(cacheKey, true);
 
       if (details) {
@@ -89,7 +83,6 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
 
     // If we have a non-terminating allow rule and no block rule matched, allow the request
     if (allowRule) {
-      console.log(`Request allowed by non-terminating ASN rule: ${url.hostname} (ASN: ${asn})`);
       this.cacheCallback(cacheKey, false);
       return { cancel: false };
     }
@@ -106,9 +99,6 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
     return this.rules.allowedAsns.find(rule => {
       const ruleAsn = parseInt(rule.value);
       const matches = rule.enabled && ruleAsn === asn;
-      if (matches) {
-        console.log(`ASN ${asn} matches allowed ASN rule: ${rule.value}`);
-      }
       return matches;
     });
   }
@@ -122,9 +112,6 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
     return this.rules.blockedAsns.find(rule => {
       const ruleAsn = parseInt(rule.value);
       const matches = rule.enabled && ruleAsn === asn;
-      if (matches) {
-        console.log(`ASN ${asn} matches blocked ASN rule: ${rule.value}`);
-      }
       return matches;
     });
   }

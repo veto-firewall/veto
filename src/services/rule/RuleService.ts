@@ -283,7 +283,6 @@ export class RuleService implements IRuleService {
    * Useful when underlying services (like MaxMind) have been updated
    */
   clearProcessorCache(): void {
-    console.log('Clearing rule processor cache to refresh service dependencies');
     this.processors.clear();
   }
 

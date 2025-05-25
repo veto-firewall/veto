@@ -104,15 +104,12 @@ export class EventService implements IService {
    * Set up web request listeners for request interception
    */
   private setupWebRequestListeners(): void {
-    console.log('Setting up web request listeners for ASN and GeoIP blocking...');
-
     try {
       browser.webRequest.onBeforeRequest.addListener(
         details => this.handleBeforeRequest(details),
         { urls: ['<all_urls>'] },
         ['blocking'],
       );
-      console.log('Web request listener registered successfully');
     } catch (e) {
       console.error('Failed to register web request listener:', e);
     }
@@ -129,7 +126,6 @@ export class EventService implements IService {
           // Create suspend rule that will be in place on next browser startup
           const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
           await declarativeRuleService.updateSuspendSetting(true);
-          console.log('Added startup blocking rule for next browser session');
         }
       } catch (error) {
         console.error('Failed to add startup blocking rule:', error);
@@ -237,12 +233,10 @@ export class EventService implements IService {
           const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
           // Update the suspend rule for the next browser startup
           await declarativeRuleService.updateSuspendSetting(newSuspendSetting);
-          console.log(`Suspend until filters load setting changed to: ${newSuspendSetting}`);
         }
 
         // Handle MaxMind license key change
         if (maxMindLicenseKeyChanged) {
-          console.log('MaxMind license key changed, refreshing services and databases');
           try {
             // Update MaxMind service configuration
             const maxMindService = ServiceFactory.getInstance().getMaxMindService();
@@ -252,13 +246,7 @@ export class EventService implements IService {
             });
 
             // Refresh MaxMind service and related components
-            const refreshSuccess = await maxMindService.refreshService();
-
-            if (refreshSuccess) {
-              console.log('MaxMind services refreshed successfully');
-            } else {
-              console.warn('MaxMind services refresh completed with warnings');
-            }
+            const _refreshSuccess = await maxMindService.refreshService();
           } catch (error) {
             console.error('Error refreshing MaxMind services:', error);
           }
@@ -271,22 +259,12 @@ export class EventService implements IService {
       }
       case 'saveRules': {
         const msgSaveRules = message as MsgSaveRules;
-        console.log('Saving updated rules:', {
-          allowedDomains: msgSaveRules.rules.allowedDomains?.length,
-          blockedDomains: msgSaveRules.rules.blockedDomains?.length,
-          allowedIps: msgSaveRules.rules.allowedIps?.length,
-          blockedIps: msgSaveRules.rules.blockedIps?.length,
-          allowedAsns: msgSaveRules.rules.allowedAsns?.length,
-          blockedAsns: msgSaveRules.rules.blockedAsns?.length,
-          blockedCountries: Object.keys(msgSaveRules.rules.blockedCountries || {}).length,
-        });
 
         this.rules = msgSaveRules.rules;
         await this.ruleService.saveRules(this.rules);
 
         // Clear all caches when rules are updated
         this.clearAllCaches();
-        console.log('Caches cleared after rule update');
 
         const declarativeRuleService = ServiceFactory.getInstance().getDeclarativeRuleService();
         await declarativeRuleService.setupRules(this.settings, this.rules);
@@ -418,7 +396,6 @@ export class EventService implements IService {
     });
 
     if (domainMatch) {
-      console.log(`Domain ${hostname} matches terminating allow rule: ${domainMatch.value}`);
       return true;
     }
 
@@ -438,7 +415,6 @@ export class EventService implements IService {
     });
 
     if (urlMatch) {
-      console.log(`Domain ${hostname} matches terminating URL allow rule: ${urlMatch.value}`);
       return true;
     }
 
@@ -455,7 +431,6 @@ export class EventService implements IService {
     });
 
     if (regexMatch) {
-      console.log(`Domain ${hostname} matches terminating regex allow rule: ${regexMatch.value}`);
       return true;
     }
 
@@ -473,12 +448,10 @@ export class EventService implements IService {
     try {
       // Ensure rules and settings are loaded
       if (!this.rules) {
-        console.log('Rules not initialized, loading from storage...');
         this.rules = await this.ruleService.getRules();
       }
 
       if (!this.settings) {
-        console.log('Settings not initialized, loading from storage...');
         this.settings = await this.storageService.getSettings();
       }
 
@@ -512,9 +485,6 @@ export class EventService implements IService {
       // Check if domain is allowed by a terminating DNR rule
       // This prevents IP/ASN/GeoIP rules from overriding DNR allow rules
       if (this.isDomainAllowedByTerminatingRule(url.hostname)) {
-        console.log(
-          `Skipping IP/ASN/GeoIP processing due to terminating domain allow rule for ${url.hostname}`,
-        );
         this.cacheService.ruleMatchCache.set(cacheKey, false);
         return { cancel: false };
       }

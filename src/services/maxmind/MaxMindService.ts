@@ -144,8 +144,6 @@ export class MaxMindService implements IService {
    * @returns Promise resolving to true if databases were loaded successfully
    */
   async reloadDatabases(): Promise<boolean> {
-    console.log('Reloading MaxMind databases...');
-
     // Clear existing readers to force reload
     this.geoIpReader = null;
     this.asnReader = null;
@@ -155,7 +153,6 @@ export class MaxMindService implements IService {
     this.cacheService.asnCache.clear();
 
     if (!this.config || !this.config.licenseKey) {
-      console.log('No license key available for database reload');
       return false;
     }
 
@@ -167,17 +164,13 @@ export class MaxMindService implements IService {
       ]);
 
       if (geoLoaded && asnLoaded) {
-        console.log('Successfully reloaded databases from storage');
         return true;
       }
 
       // If databases not in storage or failed to load, download fresh ones
-      console.log('Databases not available in storage, downloading...');
       const downloadSuccess = await this.downloadDatabases();
 
-      if (downloadSuccess) {
-        console.log('Successfully downloaded and loaded new databases');
-      } else {
+      if (!downloadSuccess) {
         console.error('Failed to download databases after configuration change');
       }
 
@@ -365,14 +358,6 @@ export class MaxMindService implements IService {
       const countryUrl = `${baseUrl}-Country${suffix}`;
       const asnUrl = `${baseUrl}-ASN${suffix}`;
 
-      console.log('Downloading MaxMind databases... (URLs masked for privacy)');
-      console.log(
-        'Country DB URL format: https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=[YOUR_KEY]&suffix=tar.gz',
-      );
-      console.log(
-        'ASN DB URL format: https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=[YOUR_KEY]&suffix=tar.gz',
-      );
-
       const [countryResponse, asnResponse] = await Promise.all([fetch(countryUrl), fetch(asnUrl)]);
 
       if (!countryResponse.ok || !asnResponse.ok) {
@@ -402,20 +387,11 @@ export class MaxMindService implements IService {
       const countryArrayBuffer = await countryResponse.arrayBuffer();
       const asnArrayBuffer = await asnResponse.arrayBuffer();
 
-      console.log(
-        'Downloaded Country database archive size:',
-        countryArrayBuffer.byteLength,
-        'bytes',
-      );
-      console.log('Downloaded ASN database archive size:', asnArrayBuffer.byteLength, 'bytes');
-
-      console.log('Extracting Country database from tar.gz archive...');
       const countryData = await this.extractMMDBFromTarGz(countryArrayBuffer, 'Country');
       if (!countryData) {
         console.error('Failed to extract Country database - extraction returned null');
       }
 
-      console.log('Extracting ASN database from tar.gz archive...');
       const asnData = await this.extractMMDBFromTarGz(asnArrayBuffer, 'ASN');
       if (!asnData) {
         console.error('Failed to extract ASN database - extraction returned null');
@@ -426,17 +402,11 @@ export class MaxMindService implements IService {
         return false;
       }
 
-      // Log database sizes for debugging
-      console.log('Extracted Country database size:', countryData.byteLength, 'bytes');
-      console.log('Extracted ASN database size:', asnData.byteLength, 'bytes');
-
       // Save the extracted databases
       await Promise.all([
         this.storageService.setValue('geoipDatabase', countryData),
         this.storageService.setValue('asnDatabase', asnData),
       ]);
-
-      console.log('Successfully saved databases to local storage');
 
       // Load the databases into memory
       await this.loadGeoIpDatabase();
@@ -477,9 +447,6 @@ export class MaxMindService implements IService {
 
       // Step 3: Select the appropriate file based on database type
       const selectedFile = this.selectMMDBFile(mmdbFiles, databaseType);
-      console.log(
-        `Extracted MMDB file: ${selectedFile.name} with size ${selectedFile.data.byteLength} bytes`,
-      );
 
       // Return the data as an ArrayBuffer for consistency
       return selectedFile.data.buffer;
@@ -534,8 +501,7 @@ export class MaxMindService implements IService {
           next();
         });
 
-        stream.on('error', (err: Error) => {
-          console.error('Stream error:', err);
+        stream.on('error', (_err: Error) => {
           next();
         });
       });
@@ -593,8 +559,6 @@ export class MaxMindService implements IService {
    * @returns Promise resolving to true if refresh was successful
    */
   async refreshService(): Promise<boolean> {
-    console.log('Refreshing MaxMind service after configuration change');
-
     try {
       // Reload databases with new configuration
       const reloadSuccess = await this.reloadDatabases();
@@ -607,7 +571,6 @@ export class MaxMindService implements IService {
       const ruleService = ServiceFactory.getInstance().getRuleService();
       ruleService.clearProcessorCache();
 
-      console.log('MaxMind service refresh completed successfully');
       return reloadSuccess;
     } catch (error) {
       console.error('Error during MaxMind service refresh:', error);

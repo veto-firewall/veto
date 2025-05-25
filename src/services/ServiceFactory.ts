@@ -293,8 +293,6 @@ export class ServiceFactory {
    * @returns Promise that resolves when refresh is complete
    */
   public async refreshMaxMindServices(): Promise<boolean> {
-    console.log('Refreshing MaxMind-related services after configuration change');
-
     try {
       // Delegate to MaxMind service's own refresh method
       const maxMindService = this.getMaxMindService();

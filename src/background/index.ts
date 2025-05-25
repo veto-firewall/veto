@@ -16,13 +16,9 @@ export const serviceFactory = ServiceFactory.getInstance();
  * @returns Promise that resolves when initialization is complete
  */
 async function initExtension(): Promise<void> {
-  void console.log('Initializing extension...');
-
   // Initialize all services
   const serviceFactory = ServiceFactory.getInstance();
   await serviceFactory.initializeAllServices();
-
-  void console.log('Extension initialized');
 }
 
 // Start initialization

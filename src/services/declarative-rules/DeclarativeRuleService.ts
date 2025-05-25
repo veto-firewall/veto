@@ -85,7 +85,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
     this.ruleLimit = this.getFirefoxRuleLimit();
 
     // No additional initialization needed
-    void console.log('DeclarativeRuleService initialized');
   }
 
   /**
@@ -193,9 +192,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
    * @returns Promise that resolves when rules are set up
    */
   private async setupRulesInternal(settings: Settings, rules: RuleSet): Promise<void> {
-    const startTime = Date.now();
-    console.log(`[${startTime}] Starting rule setup (protected by mutex)`);
-
     try {
       // Reset rule count before generating new rules
       this.resetRuleCount();
@@ -206,18 +202,15 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
 
       // Clear all existing session rules
       await this.clearExistingSessionRules();
-      console.log(`[${startTime}] Cleared existing session rules`);
 
       // Create all rule types and combine them
       const sessionRules = await this.createAllRules(settings, rules);
-      console.log(`[${startTime}] Created ${sessionRules.length} rules total`);
 
       // Add all the rules to the browser using session rules
       await browser.declarativeNetRequest.updateSessionRules({
         removeRuleIds: [], // Explicitly specify empty array for compatibility
         addRules: sessionRules,
       });
-      console.log(`[${startTime}] Successfully added rules to browser`);
 
       // Save current rule count to storage for the popup to display
       await browser.storage.local.set({ ruleCount: this.getRuleCount() });
@@ -225,12 +218,7 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       // Remove the startup suspend rule if it exists and feature is enabled
       if (suspendRuleExists && settings.suspendUntilFiltersLoad) {
         await this.removeSuspendRule();
-        console.log('Removed startup blocking rule after filters loaded successfully');
       }
-
-      console.log(
-        `[${startTime}] Session rules updated successfully: ${this.getRuleCount()}/${this.getRuleLimit()} rules used`,
-      );
     } catch (e) {
       console.error('Failed to update rules:', e);
 
@@ -257,8 +245,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
     settings: Settings,
     rules: RuleSet,
   ): Promise<browser.declarativeNetRequest.Rule[]> {
-    console.log('Starting rule generation with range-based ID allocation');
-
     // Create basic and tracking rules
     const basicRules = this.createBasicRules(settings);
     const trackingRules = this.createTrackingRules(rules);
@@ -282,9 +268,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
     const basicProcessor = new this.processors.basic();
     const basicStartId = this.getRuleIdRange('basic');
     const basicRules = basicProcessor.createRules(settings, basicStartId);
-    console.log(
-      `Basic rules: ${basicRules.length}, range: ${basicStartId}-${basicStartId + basicRules.length - 1}`,
-    );
     return basicRules;
   }
 
@@ -297,9 +280,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
     const trackingProcessor = new this.processors.tracking();
     const trackingStartId = this.getRuleIdRange('tracking');
     const trackingRules = trackingProcessor.createRules(rules, trackingStartId);
-    console.log(
-      `Tracking rules: ${trackingRules.length}, range: ${trackingStartId}-${trackingStartId + trackingRules.length - 1}`,
-    );
     return trackingRules;
   }
 
@@ -321,9 +301,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       'allow',
     );
     domainCurrentId += allowedDomainRules.length;
-    console.log(
-      `Allowed domain rules: ${allowedDomainRules.length}, range: ${domainStartId}-${domainCurrentId - 1}`,
-    );
 
     const blockedDomainRules = domainProcessor.createDomainRules(
       rules.blockedDomains,
@@ -331,9 +308,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       'block',
     );
     domainCurrentId += blockedDomainRules.length;
-    console.log(
-      `Blocked domain rules: ${blockedDomainRules.length}, range: ${domainCurrentId - blockedDomainRules.length}-${domainCurrentId - 1}`,
-    );
 
     // Create URL rules with range-based ID allocation
     const urlStartId = this.getRuleIdRange('url');
@@ -345,9 +319,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       'allow',
     );
     urlCurrentId += allowedUrlRules.length;
-    console.log(
-      `Allowed URL rules: ${allowedUrlRules.length}, range: ${urlStartId}-${urlCurrentId - 1}`,
-    );
 
     const blockedUrlRules = domainProcessor.createUrlRules(
       rules.blockedUrls,
@@ -355,9 +326,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       'block',
     );
     urlCurrentId += blockedUrlRules.length;
-    console.log(
-      `Blocked URL rules: ${blockedUrlRules.length}, range: ${urlCurrentId - blockedUrlRules.length}-${urlCurrentId - 1}`,
-    );
 
     return [
       ...allowedDomainRules,
@@ -383,9 +351,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       'allow',
     );
     regexCurrentId += allowedRegexRules.length;
-    console.log(
-      `Allowed regex rules: ${allowedRegexRules.length}, range: ${regexStartId}-${regexCurrentId - 1}`,
-    );
 
     const blockedRegexRules = regexProcessor.createRules(
       rules.blockedRegex,
@@ -393,9 +358,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
       'block',
     );
     regexCurrentId += blockedRegexRules.length;
-    console.log(
-      `Blocked regex rules: ${blockedRegexRules.length}, range: ${regexCurrentId - blockedRegexRules.length}-${regexCurrentId - 1}`,
-    );
 
     return [...allowedRegexRules, ...blockedRegexRules] as browser.declarativeNetRequest.Rule[];
   }
@@ -466,8 +428,6 @@ export class DeclarativeRuleService implements IDeclarativeRuleService {
           },
         ],
       });
-
-      console.log('Added blocking rule for browser startup');
     } catch (error) {
       console.error('Failed to add suspend rule:', error);
     }
