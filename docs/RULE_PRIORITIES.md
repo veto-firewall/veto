@@ -23,10 +23,10 @@ The system processes different rule types with carefully designed priorities to 
 ### Two-Tier System
 
 1. **Tier 1: Declarative Net Request (DNR) Rules**
+   - Tracking parameter removal rules (priority 60)
    - Domain allow/block rules (priority 50/10)
    - URL allow/block rules (priority 50/10)
    - Regex allow/block rules (priority 50/10)
-   - Tracking parameter removal rules (priority 25)
    - Processed by browser engine (very fast)
 
 2. **Tier 2: Web Request Rules**

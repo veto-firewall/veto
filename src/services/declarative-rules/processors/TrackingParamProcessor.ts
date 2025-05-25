@@ -34,7 +34,7 @@ export class TrackingParamProcessor extends BaseProcessor {
     for (const pattern of patterns) {
       dnrRules.push({
         id: id++,
-        priority: 1,
+        priority: 60, // Higher than allow rules (50) to ensure tracking params are always removed
         action: {
           type: 'redirect',
           redirect: { transform: { queryTransform: { removeParams: [pattern] } } },
