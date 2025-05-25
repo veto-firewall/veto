@@ -67,7 +67,7 @@ export class BasicRuleProcessor extends BaseProcessor {
         priority: 100,
         action: { type: 'block' },
         condition: {
-          resourceTypes: ['image'],
+          resourceTypes: ['image', 'imageset'],
         },
       });
       this.service.incrementRuleCount();
