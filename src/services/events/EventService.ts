@@ -399,6 +399,70 @@ export class EventService implements IService {
   }
 
   /**
+   * Check if a domain matches any terminating allow rules
+   * This prevents web request handlers from overriding DNR allow rules
+   * @param hostname - The hostname to check
+   * @returns True if the domain has a terminating allow rule
+   */
+  private isDomainAllowedByTerminatingRule(hostname: string): boolean {
+    // Check allowed domains
+    const domainMatch = this.rules.allowedDomains.find(rule => {
+      if (!rule.enabled || !rule.isTerminating) return false;
+
+      // Check if hostname matches the domain rule
+      // Support both exact match and subdomain match
+      const ruleDomain = rule.value.toLowerCase();
+      const checkHostname = hostname.toLowerCase();
+
+      return checkHostname === ruleDomain || checkHostname.endsWith('.' + ruleDomain);
+    });
+
+    if (domainMatch) {
+      console.log(`Domain ${hostname} matches terminating allow rule: ${domainMatch.value}`);
+      return true;
+    }
+
+    // Check allowed URLs for hostname matches
+    const urlMatch = this.rules.allowedUrls.find(rule => {
+      if (!rule.enabled || !rule.isTerminating) return false;
+
+      try {
+        const ruleUrl = new URL(rule.value);
+        const ruleHostname = ruleUrl.hostname.toLowerCase();
+        const checkHostname = hostname.toLowerCase();
+
+        return checkHostname === ruleHostname || checkHostname.endsWith('.' + ruleHostname);
+      } catch {
+        return false;
+      }
+    });
+
+    if (urlMatch) {
+      console.log(`Domain ${hostname} matches terminating URL allow rule: ${urlMatch.value}`);
+      return true;
+    }
+
+    // Check allowed regex patterns
+    const regexMatch = this.rules.allowedRegex.find(rule => {
+      if (!rule.enabled || !rule.isTerminating) return false;
+
+      try {
+        const regex = new RegExp(rule.value, 'i');
+        return regex.test(hostname);
+      } catch {
+        return false;
+      }
+    });
+
+    if (regexMatch) {
+      console.log(`Domain ${hostname} matches terminating regex allow rule: ${regexMatch.value}`);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Handle web request interception
    * @param details - Web request details
    * @returns Promise resolving to blocking response
@@ -442,6 +506,16 @@ export class EventService implements IService {
           }
           return { cancel: true };
         }
+        return { cancel: false };
+      }
+
+      // Check if domain is allowed by a terminating DNR rule
+      // This prevents IP/ASN/GeoIP rules from overriding DNR allow rules
+      if (this.isDomainAllowedByTerminatingRule(url.hostname)) {
+        console.log(
+          `Skipping IP/ASN/GeoIP processing due to terminating domain allow rule for ${url.hostname}`,
+        );
+        this.cacheService.ruleMatchCache.set(cacheKey, false);
         return { cancel: false };
       }
 

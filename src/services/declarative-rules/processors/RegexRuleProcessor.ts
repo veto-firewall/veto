@@ -30,12 +30,15 @@ export class RegexRuleProcessor extends BaseProcessor {
 
     // Process each regex rule
     for (const rule of enabledRules) {
+      // Use higher priority for allow rules to short-circuit processing
+      const priority = action === 'allow' ? 50 : 10;
+
       const ruleAction: browser.declarativeNetRequest._RuleAction =
         action === 'block' ? { type: 'block' } : { type: 'allow' };
 
       dnrRules.push({
         id: id++,
-        priority: 1,
+        priority: priority,
         action: ruleAction,
         condition: {
           regexFilter: rule.value,

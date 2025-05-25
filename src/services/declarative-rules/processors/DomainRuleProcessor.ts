@@ -75,9 +75,12 @@ export class DomainRuleProcessor extends BaseProcessor {
             ? { type: 'redirect', redirect: { url: rule.value } }
             : { type: 'allow' };
 
+      // Use higher priority for allow rules to short-circuit processing
+      const priority = action === 'allow' ? 50 : 10;
+
       dnrRules.push({
         id: id++,
-        priority: 1,
+        priority: priority,
         action: ruleAction,
         condition: {
           urlFilter: rule.value,
@@ -111,9 +114,12 @@ export class DomainRuleProcessor extends BaseProcessor {
       const ruleAction: browser.declarativeNetRequest._RuleAction =
         action === 'block' ? { type: 'block' } : { type: 'allow' };
 
+      // Use higher priority for allow rules to short-circuit processing
+      const priority = action === 'allow' ? 50 : 10;
+
       dnrRules.push({
         id: id++,
-        priority: 1,
+        priority: priority,
         action: ruleAction,
         condition: {
           regexFilter: `.*://(.*\\.)?${pattern}/.*`,
