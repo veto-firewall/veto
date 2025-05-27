@@ -540,7 +540,8 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
   const textarea = document.getElementById(baseId) as HTMLTextAreaElement;
   const terminatingCheckbox = document.getElementById(`${baseId}-terminating`) as HTMLInputElement;
 
-  const isTerminating = terminatingCheckbox?.checked ?? true;
+  // For tracking parameters, always use non-terminating rules
+  const isTerminating = baseId === 'tracking-params' ? false : (terminatingCheckbox?.checked ?? true);
   const rulesText = textarea.value;
 
   // Parse rules
