@@ -85,50 +85,6 @@ jobs:
           mv veto.zip ${RELEASE_ASSETS_DIR_PATH}/veto-${NEW_VERSION}.zip
           cd ..
 
-      - name: Calculate checksums
-        run: |
-          cd ${RELEASE_ASSETS_DIR_PATH}
-          echo "## SHA256 Checksums" >> checksums.txt
-          echo "### Extension Package" >> checksums.txt
-          EXT_CHECKSUM=$(sha256sum veto-${NEW_VERSION}.zip | awk '{print $1}')
-          echo "veto-${NEW_VERSION}.zip: ${EXT_CHECKSUM}" | tee -a checksums.txt
-          echo "EXT_CHECKSUM=${EXT_CHECKSUM}" >> $GITHUB_ENV
-          
-          echo "### Source Code" >> checksums.txt
-          SRC_CHECKSUM=$(sha256sum source-${NEW_VERSION}.zip | awk '{print $1}')
-          echo "source-${NEW_VERSION}.zip: ${SRC_CHECKSUM}" | tee -a checksums.txt
-          echo "SRC_CHECKSUM=${SRC_CHECKSUM}" >> $GITHUB_ENV
-          
-          # # Only calculate signed XPI checksum if extension was published
-          # if [ "${{ github.event.inputs.channel }}" != "do-not-publish" ]; then
-          #   echo "### Signed Extension" >> checksums.txt
-          #   SIGNED_CHECKSUM=$(sha256sum veto-${NEW_VERSION}-signed.xpi | awk '{print $1}')
-          #   echo "veto-${NEW_VERSION}-signed.xpi: ${SIGNED_CHECKSUM}" | tee -a checksums.txt
-          #   echo "SIGNED_CHECKSUM=${SIGNED_CHECKSUM}" >> $GITHUB_ENV
-          # else
-          #   echo "SIGNED_CHECKSUM=not published" >> $GITHUB_ENV
-          # fi
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cat > release_notes.md << EOL
-          ## SHA256 Checksums
-          
-          **Source Code**: \`${SRC_CHECKSUM}\`
-          **Extension Package (zip)**: \`${EXT_CHECKSUM}\`
-          
-          Distribution channel: ${{ github.event.inputs.channel }}
-          
-          Released by: @${{ github.actor }} on $(date --utc +'%Y-%m-%d %H:%M UTC')
-          EOL
-          
-          gh release create v${NEW_VERSION} \
-            --title "VETO v${NEW_VERSION}" \
-            --notes-file release_notes.md \
-            ${RELEASE_ASSETS_DIR_PATH}/*
-
       - name: Install web-ext
         if: ${{ github.event.inputs.channel != 'do-not-publish' }}
         run: |
@@ -142,18 +98,65 @@ jobs:
           WEB_EXT_API_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
         run: |
           # Use consistent 30-second timeout for both listed and unlisted
-          timeout=30000
-          
-          echo "🚀 Submitting extension to Mozilla Add-ons"
-          echo "📋 Channel: ${{ github.event.inputs.channel }}"
-          echo "⏱️ Timeout: $((timeout / 1000)) seconds"
-          echo "🔗 Status updates: https://addons.mozilla.org/en-US/developers/addon/veto-firewall/versions"
-          
+          timeout=360000
+
+          echo "Submitting extension to Mozilla Add-ons"
+          echo "Channel: ${{ github.event.inputs.channel }}"
+          echo "Timeout: $((timeout / 1000)) seconds"
+          echo "Status updates: https://addons.mozilla.org/en-US/developers/addon/veto-firewall/versions"
+
+          echo "SIGNED_ARTIFACTS_DIR=$( pwd )/signed-artifacts" >> $GITHUB_ENV
+
           web-ext sign \
             --api-key="${WEB_EXT_API_KEY}" \
             --api-secret="${WEB_EXT_API_SECRET}" \
             --channel=${{ github.event.inputs.channel }} \
             --source-dir=dist/ \
-            --artifacts-dir=./signed-artifacts \
+            --artifacts-dir="${SIGNED_ARTIFACTS_DIR}" \
             --timeout=${timeout} \
             --no-input
+
+      - name: Calculate checksums
+        run: |
+          cd ${RELEASE_ASSETS_DIR_PATH}
+          echo "## SHA256 Checksums" >> checksums.txt
+          echo "### Extension Package" >> checksums.txt
+          EXT_CHECKSUM=$(sha256sum veto-${NEW_VERSION}.zip | awk '{print $1}')
+          echo "veto-${NEW_VERSION}.zip: ${EXT_CHECKSUM}" | tee -a checksums.txt
+          echo "EXT_CHECKSUM=${EXT_CHECKSUM}" >> $GITHUB_ENV
+
+          echo "### Source Code" >> checksums.txt
+          SRC_CHECKSUM=$(sha256sum source-${NEW_VERSION}.zip | awk '{print $1}')
+          echo "source-${NEW_VERSION}.zip: ${SRC_CHECKSUM}" | tee -a checksums.txt
+          echo "SRC_CHECKSUM=${SRC_CHECKSUM}" >> $GITHUB_ENV
+
+          SIGNED_XPI=$(find "${SIGNED_ARTIFACTS_DIR}" -name "*.xpi" | head -n 1)
+          if [ ! -z ${SIGNED_XPI} ]; then
+            mv ${SIGNED_XPI} ./
+            SIGNED_XPI=$(basename ${SIGNED_XPI})
+            echo "### Signed Extension" >> checksums.txt
+            SIGNED_CHECKSUM=$(sha256sum "${SIGNED_XPI}" | awk '{print $1}')
+            echo "${SIGNED_XPI}: ${SIGNED_CHECKSUM}" | tee -a checksums.txt
+            echo "SIGNED_CHECKSUM=${SIGNED_CHECKSUM}" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > release_notes.md << EOL
+          ## SHA256 Checksums
+
+          **Source Code**: \`${SRC_CHECKSUM}\`
+          **Extension Package (zip)**: \`${EXT_CHECKSUM}\`
+          **Signed Extension (xpi)**: \`${SIGNED_CHECKSUM}\`
+
+          Distribution channel: ${{ github.event.inputs.channel }}
+
+          Released by: @${{ github.actor }} on $(date --utc +'%Y-%m-%d %H:%M UTC')
+          EOL
+
+          gh release create v${NEW_VERSION} \
+            --title "VETO v${NEW_VERSION}" \
+            --notes-file release_notes.md \
+            ${RELEASE_ASSETS_DIR_PATH}/*
