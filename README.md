@@ -4,7 +4,6 @@
   <img src="assets/images/icon-128.png" alt="VETO Logo" width="128" height="128">
 </div>
 
-[![GitHub](https://img.shields.io/github/stars/veto-firewall/veto?style=social)](https://github.com/veto-firewall/veto)
 [![Firefox Add-on](https://img.shields.io/amo/v/veto)](https://addons.mozilla.org/firefox/addon/veto-firewall/)
 [![Quality Check](https://github.com/veto-firewall/veto/actions/workflows/ci.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/ci.yml)
 [![Release](https://github.com/veto-firewall/veto/actions/workflows/release.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/release.yml)
@@ -39,6 +38,40 @@ To use GeoIP and ASN filtering features you need a free MaxMind account:
 2. Generate a [license key](https://www.maxmind.com/en/accounts/current/license-key)
 3. Enter this key in VETO settings
 4. Click "Save" to save your license key
+
+## Installation
+
+## Method 1: Install from Mozilla Add-ons (Recommended)
+
+1. Open **Firefox** on your desktop or Android device;
+2. Visit the [VETO Add-on page on AMO](https://addons.mozilla.org/en-US/firefox/addon/veto-firewall/);
+3. Click **Add to Firefox**;
+4. When prompted, click **Add** to confirm the installation;
+5. Follow any on-screen instructions to complete setup.
+
+## Method 2: Install from GitHub (.xpi file)
+
+Download the latest signed `.xpi` extension file from our [GitHub releases page](https://github.com/veto-firewall/veto/releases), then follow the appropriate instructions for your device:
+
+### For Desktop (Firefox)
+
+1. Open **Firefox**;
+2. Go to `about:addons` by entering it in the address bar, or navigate to **Settings** > **Extensions & Themes** > **Extensions**;
+3. Click the gear icon (⚙️) at the top right;
+4. Select **Install Add-on From File...**;
+5. Locate and select the `.xpi` file you downloaded earlier;
+6. Follow the on-screen prompts to complete the installation.
+
+### For Android (Firefox)
+
+1. Open **Firefox** on your Android device;
+2. Tap the three-dot menu and go to **Settings**;
+3. Scroll down and select **About Firefox**;
+4. Rapidly tap the Firefox logo five times to enable the Debug menu;
+5. Without closing Firefox, return to **Settings**;
+6. Tap **Install extension from file** (now visible in the menu);
+7. Locate and select the `.xpi` file you downloaded earlier;
+8. Follow the on-screen prompts to complete the installation.
 
 ## Architecture And Dependencies
 
@@ -96,7 +129,7 @@ The extension uses several key technologies:
 
 3. Build the extension:
    ```bash
-   npm run build
+   npm run package
    ```
 
 4. The built extension will be available in the `dist` directory
