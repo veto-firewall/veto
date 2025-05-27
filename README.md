@@ -4,12 +4,14 @@
   <img src="assets/images/icon-128.png" alt="VETO Logo" width="128" height="128">
 </div>
 
-[![Firefox Add-on](https://img.shields.io/amo/v/veto)](https://addons.mozilla.org/firefox/addon/veto-firewall/)
+<!--[![Firefox Add-on](https://img.shields.io/amo/v/veto)](https://addons.mozilla.org/firefox/addon/veto-firewall/)-->
 [![Quality Check](https://github.com/veto-firewall/veto/actions/workflows/ci.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/ci.yml)
 [![Release](https://github.com/veto-firewall/veto/actions/workflows/release.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/release.yml)
 [![Support the Project](https://img.shields.io/badge/Patreon-Support-F96854.svg)](https://patreon.com/veto_firewall)
 
-Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security. Available on [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).
+<img src="docs/screenshot-1.png">
+
+Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security. <!--Available on [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).-->
 
 > [!IMPORTANT]
 > A MaxMind License key is required to enable GeoIP and ASN blocking features. Create a <a href="https://www.maxmind.com/en/geolite2/signup" target="_blank" rel="noopener noreferrer"><strong>free account</strong></a>, then generate your<a href="https://www.maxmind.com/en/accounts/current/license-key" target="_blank" rel="noopener noreferrer"><strong> license key here</strong></a>.
@@ -31,6 +33,8 @@ Firefox extension that provides advanced filtering capabilities with GeoIP, ASN,
 - [Contributing](#contributing)
 
 ## Features
+
+<img src="docs/screenshot-2.png">
 
 VETO gives you fine-grained control over your browsing experience by allowing you to:
 
@@ -168,6 +172,10 @@ The workflow (`.github/workflows/release.yml`) will automatically:
    - Submit the extension to Firefox Add-ons with the specified distribution channel
 
 No manual steps are required as the entire process from version bumping to Firefox submission is handled by the workflow.
+
+## Use cases
+
+<img src="docs/screenshot-3.png" alt="Block every Google service except Youtube">
 
 ## Contributing
 
