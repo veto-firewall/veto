@@ -53,7 +53,7 @@ jobs:
           fi
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "Version set to: $NEW_VERSION"
-          
+
           # Only format the files we've changed
           npx prettier --write package*.json src/manifest.json
 
@@ -106,6 +106,7 @@ jobs:
           echo "Status updates: https://addons.mozilla.org/en-US/developers/addon/veto-firewall/versions"
 
           echo "SIGNED_ARTIFACTS_DIR=$( pwd )/signed-artifacts" >> $GITHUB_ENV
+          mkdir -p "${SIGNED_ARTIFACTS_DIR}"
 
           web-ext sign \
             --api-key="${WEB_EXT_API_KEY}" \
@@ -131,7 +132,7 @@ jobs:
           echo "SRC_CHECKSUM=${SRC_CHECKSUM}" >> $GITHUB_ENV
 
           SIGNED_XPI=$(find "${SIGNED_ARTIFACTS_DIR}" -name "*.xpi" | head -n 1)
-          if [ ! -z ${SIGNED_XPI} ]; then
+          if [ ! -z ${SIGNED_XPI} ] && [ -f ${SIGNED_XPI} ]; then
             mv ${SIGNED_XPI} ./
             SIGNED_XPI=$(basename ${SIGNED_XPI})
             echo "### Signed Extension" >> checksums.txt
