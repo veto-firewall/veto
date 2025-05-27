@@ -105,7 +105,8 @@ jobs:
           echo "Timeout: $((timeout / 1000)) seconds"
           echo "Status updates: https://addons.mozilla.org/en-US/developers/addon/veto-firewall/versions"
 
-          echo "SIGNED_ARTIFACTS_DIR=$( pwd )/signed-artifacts" >> $GITHUB_ENV
+          SIGNED_ARTIFACTS_DIR="$( pwd )/signed-artifacts"
+          echo "SIGNED_ARTIFACTS_DIR=${SIGNED_ARTIFACTS_DIR}" >> $GITHUB_ENV
           mkdir -p "${SIGNED_ARTIFACTS_DIR}"
 
           web-ext sign \
