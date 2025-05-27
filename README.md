@@ -11,7 +11,15 @@
 
 Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security. Available on [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).
 
+> [!IMPORTANT]
+> A MaxMind License key is required to enable GeoIP and ASN blocking features. Create a <a href="https://www.maxmind.com/en/geolite2/signup" target="_blank" rel="noopener noreferrer"><strong>free account</strong></a>, then generate your<a href="https://www.maxmind.com/en/accounts/current/license-key" target="_blank" rel="noopener noreferrer"><strong> license key here</strong></a>.
+
 - [Features](#features)
+- [Installation](#installation)
+  - [Method 1: Install from Mozilla Add-ons (Recommended)](#method-1-install-from-mozilla-add-ons-recommended)
+  - [Method 2: Install from GitHub (.xpi file)](#method-2-install-from-github-xpi-file)
+    - [For Desktop (Firefox)](#for-desktop-firefox)
+    - [For Android (Firefox)](#for-android-firefox)
 - [Architecture and Dependencies](#architecture-and-dependencies)
   - [Technology Stack](#technology-stack)
   - [Dependencies](#dependencies)
