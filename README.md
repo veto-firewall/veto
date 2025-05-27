@@ -50,6 +50,8 @@ To use GeoIP and ASN filtering features you need a free MaxMind account:
 ## Installation
 
 ## Method 1: Install from Mozilla Add-ons (Recommended)
+> [!IMPORTANT]
+> Note that the Firefox Extensions Store version is currently under review, with an estimated wait time of up to a month.
 
 1. Open **Firefox** on your desktop or Android device;
 2. Visit the [VETO Add-on page on AMO](https://addons.mozilla.org/en-US/firefox/addon/veto-firewall/);
