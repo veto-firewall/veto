@@ -4,14 +4,14 @@
   <img src="assets/images/icon-128.png" alt="VETO Logo" width="128" height="128">
 </div>
 
-<!--[![Firefox Add-on](https://img.shields.io/amo/v/veto)](https://addons.mozilla.org/firefox/addon/veto-firewall/)-->
+[![Firefox Add-on](https://img.shields.io/amo/v/veto)](https://addons.mozilla.org/firefox/addon/veto-firewall/)
 [![Quality Check](https://github.com/veto-firewall/veto/actions/workflows/ci.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/ci.yml)
 [![Release](https://github.com/veto-firewall/veto/actions/workflows/release.yml/badge.svg)](https://github.com/veto-firewall/veto/actions/workflows/release.yml)
 [![Support the Project](https://img.shields.io/badge/Patreon-Support-F96854.svg)](https://patreon.com/veto_firewall)
 
 <img src="docs/screenshot-1.png">
 
-Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security. <!--Available on [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).-->
+Firefox extension that provides advanced filtering capabilities with GeoIP, ASN, domain, URL, and content blocking. It serves as a simple firewall for privacy and security. Available on [Firefox Add-ons Store](https://addons.mozilla.org/firefox/addon/veto-firewall/).
 
 > [!IMPORTANT]
 > A MaxMind License key is required to enable GeoIP and ASN blocking features. Create a <a href="https://www.maxmind.com/en/geolite2/signup" target="_blank" rel="noopener noreferrer"><strong>free account</strong></a>, then generate your<a href="https://www.maxmind.com/en/accounts/current/license-key" target="_blank" rel="noopener noreferrer"><strong> license key here</strong></a>.
@@ -54,16 +54,12 @@ To use GeoIP and ASN filtering features you need a free MaxMind account:
 ## Installation
 
 ## Method 1: Install from Mozilla Add-ons (Recommended)
-> [!IMPORTANT]
-> Note that the Firefox Extensions Store version is currently under review, with an estimated wait time of up to a month.
 
-<!--
 1. Open **Firefox** on your desktop or Android device;
-2. Visit the [VETO Add-on page on AMO](https://addons.mozilla.org/en-US/firefox/addon/veto-firewall/);
+2. Visit the [VETO Add-on page on AMO](https://addons.mozilla.org/firefox/addon/veto-firewall/);
 3. Click **Add to Firefox**;
 4. When prompted, click **Add** to confirm the installation;
 5. Follow any on-screen instructions to complete setup.
--->
 
 ## Method 2: Install from GitHub (.xpi file)
 
