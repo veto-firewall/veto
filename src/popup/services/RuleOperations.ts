@@ -3,6 +3,7 @@
  * Clean implementation with proper extension resource loading
  */
 import type { Rule, RuleSet } from '../../services/types';
+import { parseRules } from './BackgroundMessagingService';
 
 /**
  * Parse rules for a specific rule type
@@ -20,13 +21,12 @@ export async function parseRulesForType(
   isTerminating: boolean,
 ): Promise<Rule[]> {
   try {
-    const response: unknown = await browser.runtime.sendMessage({
-      type: 'parseRules',
-      ruleType: ruleType,
-      rulesText: input,
-      actionType: actionType,
-      isTerminating: isTerminating,
-    });
+    const response = await parseRules(
+      ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
+      input,
+      actionType as 'allow' | 'block' | 'redirect',
+      isTerminating,
+    );
 
     // Validate response is an array before returning
     if (Array.isArray(response)) {

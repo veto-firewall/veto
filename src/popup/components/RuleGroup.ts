@@ -46,29 +46,35 @@ export class RuleGroup {
     heading.textContent = this._title;
     this.container.appendChild(heading);
 
-    // Add rule options
-    const optionsDiv = document.createElement('div');
-    optionsDiv.className = 'rule-options';
-
-    // Add terminating checkbox
-    this.terminatingCheckbox.type = 'checkbox';
-    this.terminatingCheckbox.id = `${this._id}-terminating`;
-    this.terminatingCheckbox.checked = this._terminatingDefault;
-
-    const label = document.createElement('label');
-    label.htmlFor = `${this._id}-terminating`;
-    label.textContent = 'Terminating (Final) Rule';
-
-    optionsDiv.appendChild(this.terminatingCheckbox);
-    optionsDiv.appendChild(label);
-    this.container.appendChild(optionsDiv);
-
     // Add textarea
     this.textarea.id = this._id;
     this.textarea.placeholder = this._placeholder;
     this.container.appendChild(this.textarea);
 
-    // Add buttons
+    // Add rule controls container
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'rule-controls';
+
+    // Add rule options (only if not neutral/tracking type)
+    if (this._type !== 'neutral') {
+      const optionsDiv = document.createElement('div');
+      optionsDiv.className = 'rule-options';
+
+      // Add terminating checkbox
+      this.terminatingCheckbox.type = 'checkbox';
+      this.terminatingCheckbox.id = `${this._id}-terminating`;
+      this.terminatingCheckbox.checked = this._terminatingDefault;
+
+      const label = document.createElement('label');
+      label.htmlFor = `${this._id}-terminating`;
+      label.textContent = 'Final Rule';
+
+      optionsDiv.appendChild(this.terminatingCheckbox);
+      optionsDiv.appendChild(label);
+      controlsDiv.appendChild(optionsDiv);
+    }
+
+    // Add actions
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'rule-actions';
 
@@ -84,7 +90,9 @@ export class RuleGroup {
 
     actionsDiv.appendChild(saveButton);
     actionsDiv.appendChild(exportButton);
-    this.container.appendChild(actionsDiv);
+    controlsDiv.appendChild(actionsDiv);
+
+    this.container.appendChild(controlsDiv);
   }
 
   /**
