@@ -170,7 +170,7 @@ export class DomainRuleProcessor extends BaseProcessor {
 
       for (const domain of domainGroup) {
         // Escape dots in domain name for regex
-        const escapedDomain = domain.replace(/\./g, '\\.');
+        const escapedDomain = domain.replace(/([\\\.])/g, '\\$1');
 
         // Check if adding this domain would exceed the regex length limit
         if (currentPattern.length + escapedDomain.length + 1 > this.maxRegexLength) {
