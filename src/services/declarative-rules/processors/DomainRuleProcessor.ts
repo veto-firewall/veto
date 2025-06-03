@@ -1,5 +1,5 @@
 /**
- * Processor for domain and URL-based declarative rules
+ * Processor for domain and URL-based declarative rules - Function-based version
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
 import type { Rule } from '../../types';
@@ -88,7 +88,7 @@ export class DomainRuleProcessor extends BaseProcessor {
         },
       });
 
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     return dnrRules;
@@ -127,7 +127,7 @@ export class DomainRuleProcessor extends BaseProcessor {
         },
       });
 
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     return dnrRules;
@@ -139,54 +139,32 @@ export class DomainRuleProcessor extends BaseProcessor {
    * @returns Array of regex patterns
    */
   private createRegexPatterns(domains: string[]): string[] {
-    if (domains.length === 0) return [];
+    const patterns: string[] = [];
+    let currentPattern = '';
 
-    // Group domains by TLD for better compression
-    const domainsByTLD: Record<string, string[]> = {};
-
-    // Process and group domains
     for (const domain of domains) {
-      const parts = domain.split('.');
+      // Escape special regex characters in the domain
+      const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      // Skip invalid domains
-      if (parts.length < 2) continue;
+      // Check if adding this domain would exceed the regex length limit
+      const newPattern = currentPattern
+        ? `${currentPattern}|${escapedDomain}`
+        : escapedDomain;
 
-      const tld = parts[parts.length - 1];
-      if (!domainsByTLD[tld]) {
-        domainsByTLD[tld] = [];
+      if (newPattern.length > this.maxRegexLength) {
+        // Save the current pattern and start a new one
+        if (currentPattern) {
+          patterns.push(currentPattern);
+        }
+        currentPattern = escapedDomain;
+      } else {
+        currentPattern = newPattern;
       }
-
-      domainsByTLD[tld].push(domain);
     }
 
-    const patterns: string[] = [];
-
-    // Process each TLD group
-    for (const tld in domainsByTLD) {
-      // Sort domains by length for better grouping potential
-      const domainGroup = domainsByTLD[tld].sort((a, b) => a.length - b.length);
-
-      let currentPattern = '';
-
-      for (const domain of domainGroup) {
-        // Escape dots in domain name for regex
-        const escapedDomain = domain.replace(/\./g, '\\.');
-
-        // Check if adding this domain would exceed the regex length limit
-        if (currentPattern.length + escapedDomain.length + 1 > this.maxRegexLength) {
-          // Add the current pattern to the list and start a new one
-          patterns.push(currentPattern);
-          currentPattern = escapedDomain;
-        } else {
-          // Add to current pattern with separator if needed
-          currentPattern = currentPattern ? `${currentPattern}|${escapedDomain}` : escapedDomain;
-        }
-      }
-
-      // Add the last pattern if it exists
-      if (currentPattern) {
-        patterns.push(currentPattern);
-      }
+    // Add the final pattern if it exists
+    if (currentPattern) {
+      patterns.push(currentPattern);
     }
 
     return patterns;

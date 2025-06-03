@@ -2,9 +2,8 @@
  * MaxMindService handles GeoIP and ASN lookups
  * Clean implementation with static imports
  */
-import type { IService } from '../types';
-import { StorageService } from '../storage/StorageService';
-import { ServiceFactory } from '../ServiceFactory';
+import { getSettings, saveSettings, getValue, setValue } from '../storage/StorageService';
+import { getGeoIpCache, getAsnCache } from '../cache/CacheService';
 import { isValid as _isValid } from 'ipaddr.js';
 // Static imports instead of dynamic imports
 import { Reader } from 'mmdb-lib';
@@ -46,12 +45,7 @@ interface ReaderInstance<T> {
 /**
  * Service for MaxMind GeoIP operations
  */
-export class MaxMindService implements IService {
-  /**
-   * Storage service for persistent data
-   */
-  private storageService: StorageService;
-
+export class MaxMindService {
   /**
    * GeoIP database reader
    */
@@ -68,17 +62,9 @@ export class MaxMindService implements IService {
   private config: MaxMindConfig | null = null;
 
   /**
-   * Cache service for data caching
-   */
-  private cacheService = ServiceFactory.getInstance().getCacheService();
-
-  /**
    * Creates a new MaxMind service
-   * @param storageService - Storage service for persistent data
    */
-  constructor(storageService: StorageService) {
-    this.storageService = storageService;
-  }
+  constructor() {}
 
   /**
    * Initialize the MaxMind service
@@ -86,7 +72,7 @@ export class MaxMindService implements IService {
    */
   async initialize(): Promise<void> {
     // Get MaxMind configuration from settings
-    const settings = await this.storageService.getSettings<MaxMindServiceSettings>();
+    const settings = await getSettings<MaxMindServiceSettings>();
 
     if (settings && settings.maxmind) {
       this.config = settings.maxmind;
@@ -125,17 +111,17 @@ export class MaxMindService implements IService {
     this.config = config;
 
     // Update settings
-    const settings = await this.storageService.getSettings<MaxMindServiceSettings>();
+    const settings = await getSettings<MaxMindServiceSettings>();
     if (settings) {
       settings.maxmind = config;
-      return this.storageService.saveSettings<MaxMindServiceSettings>(settings);
+      return saveSettings<MaxMindServiceSettings>(settings);
     }
 
     // If no settings exist yet, create them
     const newSettings: MaxMindServiceSettings = {
       maxmind: config,
     };
-    return this.storageService.saveSettings<MaxMindServiceSettings>(newSettings);
+    return saveSettings<MaxMindServiceSettings>(newSettings);
   }
 
   /**
@@ -150,7 +136,7 @@ export class MaxMindService implements IService {
       }
 
       // Get from storage
-      const geoipDatabase = await this.storageService.getValue<ArrayBuffer>('geoipDatabase');
+      const geoipDatabase = await getValue<ArrayBuffer>('geoipDatabase');
 
       if (!geoipDatabase) {
         return false;
@@ -182,7 +168,7 @@ export class MaxMindService implements IService {
       }
 
       // Get from storage
-      const asnDatabase = await this.storageService.getValue<ArrayBuffer>('asnDatabase');
+      const asnDatabase = await getValue<ArrayBuffer>('asnDatabase');
 
       if (!asnDatabase) {
         return false;
@@ -215,8 +201,9 @@ export class MaxMindService implements IService {
       }
 
       // Check cache first
-      if (this.cacheService.geoIpCache.has(ip)) {
-        return this.cacheService.geoIpCache.get(ip) as string;
+      const geoIpCache = getGeoIpCache();
+      if (geoIpCache.has(ip)) {
+        return geoIpCache.get(ip) as string;
       }
 
       // Load database if needed
@@ -237,7 +224,7 @@ export class MaxMindService implements IService {
       const country = result.country.iso_code;
 
       // Cache the result
-      this.cacheService.geoIpCache.set(ip, country);
+      geoIpCache.set(ip, country);
 
       return country;
     } catch (error) {
@@ -259,8 +246,9 @@ export class MaxMindService implements IService {
       }
 
       // Check cache first
-      if (this.cacheService.asnCache.has(ip)) {
-        return this.cacheService.asnCache.get(ip) as number;
+      const asnCache = getAsnCache();
+      if (asnCache.has(ip)) {
+        return asnCache.get(ip) as number;
       }
 
       // Load database if needed
@@ -281,7 +269,7 @@ export class MaxMindService implements IService {
       const asn = result.autonomous_system_number;
 
       // Cache the result
-      this.cacheService.asnCache.set(ip, asn);
+      asnCache.set(ip, asn);
 
       return asn;
     } catch (error) {
@@ -334,8 +322,8 @@ export class MaxMindService implements IService {
 
       // Save the extracted databases
       await Promise.all([
-        this.storageService.setValue('geoipDatabase', countryData),
-        this.storageService.setValue('asnDatabase', asnData),
+        setValue('geoipDatabase', countryData),
+        setValue('asnDatabase', asnData),
       ]);
 
       // Load the databases into memory
@@ -486,8 +474,10 @@ export class MaxMindService implements IService {
       this.asnReader = null;
 
       // Clear MaxMind-related caches
-      this.cacheService.geoIpCache.clear();
-      this.cacheService.asnCache.clear();
+      const geoIpCache = getGeoIpCache();
+      const asnCache = getAsnCache();
+      geoIpCache.clear();
+      asnCache.clear();
 
       if (!this.config || !this.config.licenseKey) {
         return false;
@@ -531,6 +521,41 @@ export class MaxMindService implements IService {
     }
 
     settings.maxmind = this.config;
-    await this.storageService.saveSettings<MaxMindServiceSettings>(settings);
+    await saveSettings<MaxMindServiceSettings>(settings);
   }
+}
+
+// Standalone function exports for use with converted services
+let maxMindServiceInstance: MaxMindService | null = null;
+
+/**
+ * Get MaxMind service instance (temporary compatibility)
+ */
+function getMaxMindInstance(): MaxMindService {
+  if (!maxMindServiceInstance) {
+    // Temporarily use ServiceFactory for initialization
+    const { ServiceFactory } = require('../ServiceFactory');
+    maxMindServiceInstance = ServiceFactory.getInstance().getMaxMindService();
+  }
+  return maxMindServiceInstance!;
+}
+
+/**
+ * Look up a country by IP address
+ * @param ip - IP address to look up
+ * @returns Promise resolving to country code or null
+ */
+export async function getCountryByIp(ip: string): Promise<string | null> {
+  const instance = getMaxMindInstance();
+  return instance.getCountryByIp(ip);
+}
+
+/**
+ * Look up an ASN by IP address
+ * @param ip - IP address to look up
+ * @returns Promise resolving to ASN or null
+ */
+export async function getAsnByIp(ip: string): Promise<number | null> {
+  const instance = getMaxMindInstance();
+  return instance.getAsnByIp(ip);
 }

@@ -3,18 +3,12 @@
  */
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import type { RuleSet } from '../../types';
-import { ServiceFactory } from '../../ServiceFactory';
+import { resolveDomain, ipMatchesRange } from '../../network/NetworkService';
 
 /**
  * Handles processing of IP-based rules
  */
 export class IpRuleProcessor extends BaseRuleProcessor {
-  /**
-   * Network service for IP address operations
-   * @private
-   */
-  private networkService;
-
   /**
    * Creates a new IP rule processor
    * @param rules - Rules to process
@@ -22,7 +16,6 @@ export class IpRuleProcessor extends BaseRuleProcessor {
    */
   constructor(rules: RuleSet, cacheCallback: CacheCallback) {
     super(rules, cacheCallback);
-    this.networkService = ServiceFactory.getInstance().getNetworkService();
   }
 
   /**
@@ -41,14 +34,14 @@ export class IpRuleProcessor extends BaseRuleProcessor {
       return null;
     }
 
-    const ip = await this.networkService.resolveDomain(url.hostname);
+    const ip = await resolveDomain(url.hostname);
     if (!ip) {
       return null;
     }
 
     // First, find any matching allowed IP rule
     const allowedRule = this.rules.allowedIps.find(
-      rule => rule.enabled && this.networkService.ipMatchesRange(ip, rule.value),
+      rule => rule.enabled && ipMatchesRange(ip, rule.value),
     );
 
     // Check if there's a terminating allow rule - these take highest precedence
@@ -59,7 +52,7 @@ export class IpRuleProcessor extends BaseRuleProcessor {
 
     // Then check for blocked IPs - block rules always override non-terminating allow rules
     const blockedRule = this.rules.blockedIps.find(
-      rule => rule.enabled && this.networkService.ipMatchesRange(ip, rule.value),
+      rule => rule.enabled && ipMatchesRange(ip, rule.value),
     );
 
     if (blockedRule) {

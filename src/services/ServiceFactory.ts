@@ -1,16 +1,9 @@
 /**
- * ServiceFactory provides centralized access to all services
+ * ServiceFactory provides centralized access to remaining class-based services
  * Creates and initializes services with proper dependencies
  */
 import { IService } from './types';
-import { StorageService } from './storage';
-import { RuleService } from './rule';
-import { NetworkService } from './network';
 import { MaxMindService } from './maxmind';
-import { EventService } from './events';
-import { CacheService } from './cache';
-import { LoggingService } from './logging';
-import { DeclarativeRuleService } from './declarative-rules';
 
 /**
  * Factory for creating and initializing services
@@ -43,89 +36,6 @@ export class ServiceFactory {
   }
 
   /**
-   * Get or create a storage service
-   * @returns Storage service instance
-   */
-  public getStorageService(): StorageService {
-    const key = 'storage';
-
-    if (!this.services.has(key)) {
-      const service = new StorageService();
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service
-          .initialize()
-          .catch(err => console.error('Failed to initialize StorageService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize StorageService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as StorageService;
-  }
-
-  /**
-   * Get or create a rule service
-   * @returns Rule service instance
-   */
-  public getRuleService(): RuleService {
-    const key = 'rule';
-
-    if (!this.services.has(key)) {
-      const storageService = this.getStorageService();
-      const service = new RuleService(storageService);
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service.initialize().catch(err => console.error('Failed to initialize RuleService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize RuleService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as RuleService;
-  }
-
-  /**
-   * Get or create a network service
-   * @returns Network service instance
-   */
-  public getNetworkService(): NetworkService {
-    const key = 'network';
-
-    if (!this.services.has(key)) {
-      const service = new NetworkService();
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service
-          .initialize()
-          .catch(err => console.error('Failed to initialize NetworkService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize NetworkService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as NetworkService;
-  }
-
-  /**
    * Get or create a MaxMind service
    * @returns MaxMind service instance
    */
@@ -133,20 +43,19 @@ export class ServiceFactory {
     const key = 'maxmind';
 
     if (!this.services.has(key)) {
-      const storageService = this.getStorageService();
-      const service = new MaxMindService(storageService);
+      const service = new MaxMindService();
       this.services.set(key, service);
 
       // Auto-initialize
       if (document.readyState === 'complete') {
         service
           .initialize()
-          .catch(err => console.error('Failed to initialize MaxMindService:', err));
+          .catch((err: unknown) => console.error('Failed to initialize MaxMindService:', err));
       } else {
         window.addEventListener('load', () => {
           service
             .initialize()
-            .catch(err => console.error('Failed to initialize MaxMindService:', err));
+            .catch((err: unknown) => console.error('Failed to initialize MaxMindService:', err));
         });
       }
     }
@@ -155,132 +64,12 @@ export class ServiceFactory {
   }
 
   /**
-   * Get or create an event service
-   * @returns Event service instance
-   */
-  public getEventService(): EventService {
-    const key = 'event';
-
-    if (!this.services.has(key)) {
-      const service = new EventService();
-
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service.initialize().catch(err => console.error('Failed to initialize EventService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize EventService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as EventService;
-  }
-
-  /**
-   * Get or create a cache service
-   * @returns Cache service instance
-   */
-  public getCacheService(): CacheService {
-    const key = 'cache';
-
-    if (!this.services.has(key)) {
-      const service = new CacheService();
-
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service.initialize().catch(err => console.error('Failed to initialize CacheService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize CacheService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as CacheService;
-  }
-
-  /**
-   * Get or create a logging service
-   * @returns Logging service instance
-   */
-  public getLoggingService(): LoggingService {
-    const key = 'logging';
-
-    if (!this.services.has(key)) {
-      const service = new LoggingService();
-
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service
-          .initialize()
-          .catch(err => console.error('Failed to initialize LoggingService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize LoggingService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as LoggingService;
-  }
-
-  /**
-   * Get or create a declarative rule service
-   * @returns Declarative rule service instance
-   */
-  public getDeclarativeRuleService(): DeclarativeRuleService {
-    const key = 'declarativeRule';
-
-    if (!this.services.has(key)) {
-      const storageService = this.getStorageService();
-      const service = new DeclarativeRuleService(storageService);
-
-      this.services.set(key, service);
-
-      // Auto-initialize
-      if (document.readyState === 'complete') {
-        service
-          .initialize()
-          .catch(err => console.error('Failed to initialize DeclarativeRuleService:', err));
-      } else {
-        window.addEventListener('load', () => {
-          service
-            .initialize()
-            .catch(err => console.error('Failed to initialize DeclarativeRuleService:', err));
-        });
-      }
-    }
-
-    return this.services.get(key) as DeclarativeRuleService;
-  }
-
-  /**
    * Initialize all services
    * @returns Promise that resolves when all services are initialized
    */
   public async initializeAllServices(): Promise<void> {
-    // Create all services to ensure they are registered
-    this.getStorageService();
-    this.getRuleService();
-    this.getNetworkService();
+    // Create MaxMind service to ensure it is registered
     this.getMaxMindService();
-    this.getEventService();
-    this.getCacheService();
-    this.getLoggingService();
-    this.getDeclarativeRuleService();
 
     // Initialize all services in proper order
     const initPromises = Array.from(this.services.values()).map(service => service.initialize());

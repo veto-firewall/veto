@@ -3,24 +3,13 @@
  */
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import type { RuleSet } from '../../types';
-import { ServiceFactory } from '../../ServiceFactory';
+import { resolveDomain } from '../../network/NetworkService';
+import { getCountryByIp } from '../../maxmind/MaxMindService';
 
 /**
  * Handles processing of GeoIP-based rules
  */
 export class GeoIpRuleProcessor extends BaseRuleProcessor {
-  /**
-   * MaxMind service for country lookups
-   * @private
-   */
-  private maxmindService;
-
-  /**
-   * Network service for domain resolution
-   * @private
-   */
-  private networkService;
-
   /**
    * Creates a new GeoIP rule processor
    * @param rules - Rules to process
@@ -28,9 +17,6 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
    */
   constructor(rules: RuleSet, cacheCallback: CacheCallback) {
     super(rules, cacheCallback);
-    const serviceFactory = ServiceFactory.getInstance();
-    this.maxmindService = serviceFactory.getMaxMindService();
-    this.networkService = serviceFactory.getNetworkService();
   }
 
   /**
@@ -49,12 +35,12 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
       return null;
     }
 
-    const ip = await this.networkService.resolveDomain(url.hostname);
+    const ip = await resolveDomain(url.hostname);
     if (!ip) {
       return null;
     }
 
-    const country = await this.maxmindService.getCountryByIp(ip);
+    const country = await getCountryByIp(ip);
 
     if (!country) {
       return null;
