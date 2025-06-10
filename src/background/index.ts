@@ -39,5 +39,23 @@ async function initExtension(): Promise<void> {
   }
 }
 
-// Start initialization
+// Firefox MV3 specific initialization
+// onStartup fires when Firefox starts up
+browser.runtime.onStartup.addListener(() => {
+  console.log('Browser startup detected, initializing Veto...');
+  void initExtension();
+});
+
+// onInstalled fires when the extension is installed/updated
+browser.runtime.onInstalled.addListener(() => {
+  console.log('Extension installed/updated, initializing Veto...');
+  void initExtension();
+});
+
+browser.runtime.onConnect.addListener(() => {
+  console.log('Extension installed/updated, initializing Veto...');
+  void initExtension();
+});
+
+// Initial load initialization
 void initExtension();
