@@ -14,7 +14,7 @@ import { parse, parseCIDR, isValid } from 'ipaddr.js';
  */
 export function isPrivateIP(ip: string): boolean {
   const cache = getIpClassificationCache();
-  
+
   if (cache.has(ip)) {
     return cache.get(ip) as boolean;
   }
@@ -135,7 +135,10 @@ export async function isPrivateHost(hostname: string): Promise<boolean> {
  * @param useCache - Whether to use the DNS cache
  * @returns Promise resolving to IP address or null
  */
-export async function resolveDomain(domain: string, useCache: boolean = true): Promise<string | null> {
+export async function resolveDomain(
+  domain: string,
+  useCache: boolean = true,
+): Promise<string | null> {
   // If domain is already an IP address, return it directly
   try {
     if (isValid(domain)) {

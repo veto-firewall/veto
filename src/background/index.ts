@@ -23,16 +23,13 @@ export const serviceFactory = ServiceFactory.getInstance();
 async function initExtension(): Promise<void> {
   try {
     // Initialize function-based services that need explicit initialization
-    await Promise.all([
-      initializeLogging(),
-      initializeDeclarativeRule(),
-    ]);
+    await Promise.all([initializeLogging(), initializeDeclarativeRule()]);
 
     // Initialize remaining class-based services through ServiceFactory
     const serviceFactory = ServiceFactory.getInstance();
     // Only initialize services that are still class-based
     serviceFactory.getMaxMindService(); // This will auto-initialize
-    
+
     // Initialize EventService last since it depends on other services
     await initializeEvent();
 

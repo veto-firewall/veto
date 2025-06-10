@@ -5,6 +5,7 @@
 import { getSettings, saveSettings, getValue, setValue } from '../storage/StorageService';
 import { getGeoIpCache, getAsnCache } from '../cache/CacheService';
 import { isValid as _isValid } from 'ipaddr.js';
+import { ServiceFactory } from '../ServiceFactory';
 // Static imports instead of dynamic imports
 import { Reader } from 'mmdb-lib';
 import type { CountryResponse, AsnResponse } from 'mmdb-lib/lib/reader/response';
@@ -321,10 +322,7 @@ export class MaxMindService {
       }
 
       // Save the extracted databases
-      await Promise.all([
-        setValue('geoipDatabase', countryData),
-        setValue('asnDatabase', asnData),
-      ]);
+      await Promise.all([setValue('geoipDatabase', countryData), setValue('asnDatabase', asnData)]);
 
       // Load the databases into memory
       await this.loadGeoIpDatabase();
@@ -533,8 +531,6 @@ let maxMindServiceInstance: MaxMindService | null = null;
  */
 function getMaxMindInstance(): MaxMindService {
   if (!maxMindServiceInstance) {
-    // Temporarily use ServiceFactory for initialization
-    const { ServiceFactory } = require('../ServiceFactory');
     maxMindServiceInstance = ServiceFactory.getInstance().getMaxMindService();
   }
   return maxMindServiceInstance!;

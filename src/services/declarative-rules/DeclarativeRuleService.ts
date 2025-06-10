@@ -1,9 +1,9 @@
 /**
- * DeclarativeRuleService function-based implementation  
+ * DeclarativeRuleService function-based implementation
  * Handles all browser declarativeNetRequest operations as standalone functions
  */
 import type { RuleSet, Settings } from '../types';
-import { 
+import {
   BasicRuleProcessor,
   DomainRuleProcessor,
   TrackingParamProcessor,
@@ -284,18 +284,10 @@ function createDomainAndUrlRules(rules: RuleSet): browser.declarativeNetRequest.
   const urlStartId = getRuleIdRange('url');
   let urlCurrentId = urlStartId;
 
-  const allowedUrlRules = domainProcessor.createUrlRules(
-    rules.allowedUrls,
-    urlCurrentId,
-    'allow',
-  );
+  const allowedUrlRules = domainProcessor.createUrlRules(rules.allowedUrls, urlCurrentId, 'allow');
   urlCurrentId += allowedUrlRules.length;
 
-  const blockedUrlRules = domainProcessor.createUrlRules(
-    rules.blockedUrls,
-    urlCurrentId,
-    'block',
-  );
+  const blockedUrlRules = domainProcessor.createUrlRules(rules.blockedUrls, urlCurrentId, 'block');
   urlCurrentId += blockedUrlRules.length;
 
   return [
@@ -316,50 +308,13 @@ function createRegexRules(rules: RuleSet): browser.declarativeNetRequest.Rule[] 
   const regexStartId = getRuleIdRange('regex');
   let regexCurrentId = regexStartId;
 
-  const allowedRegexRules = regexProcessor.createRules(
-    rules.allowedRegex,
-    regexCurrentId,
-    'allow',
-  );
+  const allowedRegexRules = regexProcessor.createRules(rules.allowedRegex, regexCurrentId, 'allow');
   regexCurrentId += allowedRegexRules.length;
 
-  const blockedRegexRules = regexProcessor.createRules(
-    rules.blockedRegex,
-    regexCurrentId,
-    'block',
-  );
+  const blockedRegexRules = regexProcessor.createRules(rules.blockedRegex, regexCurrentId, 'block');
   regexCurrentId += blockedRegexRules.length;
 
   return [...allowedRegexRules, ...blockedRegexRules] as browser.declarativeNetRequest.Rule[];
-}
-
-/**
- * Clear all existing declarative network request rules
- */
-async function clearExistingRules(): Promise<void> {
-  // Get existing session rules
-  const existingSessionRules = await browser.declarativeNetRequest.getSessionRules();
-  const existingSessionRuleIds = existingSessionRules.map(r => r.id);
-
-  // Get existing dynamic rules
-  const existingDynamicRules = await browser.declarativeNetRequest.getDynamicRules();
-  const existingDynamicRuleIds = existingDynamicRules.map(r => r.id);
-
-  // Remove all existing session rules
-  if (existingSessionRuleIds.length > 0) {
-    await browser.declarativeNetRequest.updateSessionRules({
-      removeRuleIds: existingSessionRuleIds,
-      addRules: [],
-    });
-  }
-
-  // Remove all existing dynamic rules
-  if (existingDynamicRuleIds.length > 0) {
-    await browser.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: existingDynamicRuleIds,
-      addRules: [],
-    });
-  }
 }
 
 /**

@@ -147,9 +147,7 @@ export class DomainRuleProcessor extends BaseProcessor {
       const escapedDomain = domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
       // Check if adding this domain would exceed the regex length limit
-      const newPattern = currentPattern
-        ? `${currentPattern}|${escapedDomain}`
-        : escapedDomain;
+      const newPattern = currentPattern ? `${currentPattern}|${escapedDomain}` : escapedDomain;
 
       if (newPattern.length > this.maxRegexLength) {
         // Save the current pattern and start a new one

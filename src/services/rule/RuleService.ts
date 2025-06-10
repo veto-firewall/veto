@@ -3,7 +3,10 @@
  * Handles all rule-related operations as standalone functions
  */
 import type { RuleSet, Rule, RuleType, RuleAction } from '../types';
-import { getRules as getStorageRules, saveRules as saveStorageRules } from '../storage/StorageService';
+import {
+  getRules as getStorageRules,
+  saveRules as saveStorageRules,
+} from '../storage/StorageService';
 import isFQDN from 'validator/lib/isFQDN.js';
 import isURL from 'validator/lib/isURL.js';
 import isIP from 'validator/lib/isIP.js';
@@ -13,6 +16,7 @@ import { IpRuleProcessor } from './processors/IpRuleProcessor';
 import { AsnRuleProcessor } from './processors/AsnRuleProcessor';
 import { GeoIpRuleProcessor } from './processors/GeoIpRuleProcessor';
 import { CacheCallback } from './processors/BaseRuleProcessor';
+import { getRuleLimit } from '../declarative-rules/DeclarativeRuleService';
 
 /**
  * Current rule ID counter
@@ -47,7 +51,10 @@ export async function saveRules(rules: RuleSet): Promise<boolean> {
  * @param includeComments - Whether to include comments in the output
  * @returns Promise resolving to rules as a string
  */
-export async function exportRules(ruleType: string, includeComments: boolean = false): Promise<string> {
+export async function exportRules(
+  ruleType: string,
+  includeComments: boolean = false,
+): Promise<string> {
   try {
     const allRules = await getRules();
     return await getRulesText(ruleType, allRules, includeComments);
@@ -65,10 +72,9 @@ export function generateRuleId(): string {
   // Initialize the ID counter if not already done
   if (ruleId === null) {
     // Import the declarative rule function for getting the rule limit
-    const { getRuleLimit } = require('../declarative-rules/DeclarativeRuleService');
     ruleId = getRuleLimit() + 1;
   }
-  
+
   // Increment and return the rule ID (after null check, ruleId is guaranteed to be a number)
   return (++ruleId!).toString();
 }
@@ -81,7 +87,12 @@ export function generateRuleId(): string {
  * @param isTerminating - Whether this is a terminating rule
  * @returns A Rule object
  */
-export function createRule(type: RuleType, value: string, action: RuleAction, isTerminating = true): Rule {
+export function createRule(
+  type: RuleType,
+  value: string,
+  action: RuleAction,
+  isTerminating = true,
+): Rule {
   return {
     id: generateRuleId(),
     type,
@@ -100,7 +111,12 @@ export function createRule(type: RuleType, value: string, action: RuleAction, is
  * @param isTerminating - Whether these are terminating rules
  * @returns An array of Rule objects
  */
-export function parseRules(type: RuleType, input: string, action: RuleAction, isTerminating = true): Rule[] {
+export function parseRules(
+  type: RuleType,
+  input: string,
+  action: RuleAction,
+  isTerminating = true,
+): Rule[] {
   const rules: Rule[] = [];
 
   // Split by newlines first to properly handle comments

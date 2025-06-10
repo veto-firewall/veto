@@ -12,29 +12,19 @@ import type {
 import type { Settings, RuleSet, Rule } from '../types';
 
 // Function imports from converted services
-import {
-  getRules,
-  saveRules,
-  exportRules,
-  parseRules,
-  processRules,
-} from '../rule/RuleService';
-import {
-  getCountryByIp,
-  getAsnByIp,
-} from '../maxmind/MaxMindService';
+import { getRules, saveRules, exportRules, parseRules, processRules } from '../rule/RuleService';
 
 // Service imports - these may still be class-based or function-based
 import { getSettings, saveSettings } from '../storage/StorageService';
 import { isPrivateHost, resolveDomain } from '../network/NetworkService';
-import {
-  getRuleMatchCache,
-  clearAllCaches,
-  getCountryLookupCache,
-} from '../cache/CacheService';
+import { getRuleMatchCache, clearAllCaches, getCountryLookupCache } from '../cache/CacheService';
 
 // Import function-based declarative rule service
-import { setupRules, updateSuspendSetting, getRuleLimit } from '../declarative-rules/DeclarativeRuleService';
+import {
+  setupRules,
+  updateSuspendSetting,
+  getRuleLimit,
+} from '../declarative-rules/DeclarativeRuleService';
 
 // Import function-based logging service
 import { logBlockedRequest } from '../logging/LoggingService';
@@ -211,8 +201,7 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
 
       // Check if suspendUntilFiltersLoad setting changed
       const suspendSettingChanged =
-        settings.suspendUntilFiltersLoad !==
-        msgSaveSettings.settings.suspendUntilFiltersLoad;
+        settings.suspendUntilFiltersLoad !== msgSaveSettings.settings.suspendUntilFiltersLoad;
       const newSuspendSetting = msgSaveSettings.settings.suspendUntilFiltersLoad;
 
       // Check if MaxMind license key changed
@@ -240,7 +229,7 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
             licenseKey: msgSaveSettings.settings.maxmind.licenseKey,
             lastDownload: settings.maxmind.lastDownload,
           });
-          
+
           // Refresh MaxMind service and related components
           const _refreshSuccess = await maxMindService.refreshService();
         } catch (error) {
@@ -515,5 +504,3 @@ async function handleBeforeRequest(
     return { cancel: false };
   }
 }
-
-
