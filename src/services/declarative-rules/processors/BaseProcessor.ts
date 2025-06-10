@@ -1,8 +1,7 @@
 /**
- * Base class for declarative rule processors
+ * Base class for declarative rule processors - Function-based version
  */
-import type { DeclarativeRuleService } from '../DeclarativeRuleService';
-import { ServiceFactory } from '../../ServiceFactory';
+import { incrementRuleCount } from '../DeclarativeRuleService';
 
 /**
  * All available resource types to use for comprehensive rules
@@ -37,14 +36,17 @@ export const ALL_RESOURCE_TYPES = [
  */
 export abstract class BaseProcessor {
   /**
-   * Reference to the parent service
+   * Track a rule count increase
+   * @param count - Number of rules to add (default: 1)
    */
-  protected service: DeclarativeRuleService;
+  protected incrementRuleCount(count: number = 1): void {
+    incrementRuleCount(count);
+  }
 
   /**
    * Creates a new processor
    */
   constructor() {
-    this.service = ServiceFactory.getInstance().getDeclarativeRuleService();
+    // No service dependency needed anymore
   }
 }

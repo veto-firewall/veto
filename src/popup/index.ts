@@ -1,7 +1,6 @@
 import '../popup/popup.css';
 import type { Settings, RuleSet } from '../services/types';
 import { setupUIEvents } from './services/UIEventHandler';
-import { PopupService } from './services/PopupService';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { Toast } from './components/Toast';
 import {
@@ -10,6 +9,15 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
+import {
+  getSettings,
+  saveSettings,
+  getRules,
+  saveRules as saveRulesToBackground_,
+  getRuleLimit,
+  getCountryLookupCache,
+  setCountryLookupCache,
+} from './services/BackgroundMessagingService';
 
 // Static import of countries data
 import { countries, continents } from 'countries-list';
@@ -28,11 +36,11 @@ const toast = new Toast();
  * Update the rule count display in the UI
  */
 async function updateRuleCount(): Promise<void> {
-  const result = await browser.storage.local.get('ruleCount');
+  const result = await browser.storage.local.get(['ruleCount']);
   const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
 
-  // Get rule limit from background script instead of accessing ServiceFactory directly
-  const ruleLimit = (await browser.runtime.sendMessage({ type: 'getRuleLimit' })) as number;
+  // Get rule limit from background script
+  const ruleLimit = await getRuleLimit();
 
   // Update rule count element with combined format
   const ruleCountElement = document.getElementById('rule-count');
@@ -141,7 +149,7 @@ function initSectionExpansion(): void {
 
 // Load settings from background
 async function loadSettings(): Promise<void> {
-  settings = (await browser.runtime.sendMessage({ type: 'getSettings' })) as Settings;
+  settings = await getSettings();
 
   // Populate settings UI
   const licenseKeyInput = document.getElementById('license-key') as HTMLInputElement;
@@ -199,7 +207,7 @@ async function loadSettings(): Promise<void> {
 
 // Load rules from background
 async function loadRules(): Promise<void> {
-  rules = (await browser.runtime.sendMessage({ type: 'getRules' })) as RuleSet;
+  rules = await getRules();
 
   // Populate rules UI (using await since the function is now async)
   await populateRuleTextarea('allowed-domains', rules.allowedDomains);
@@ -316,8 +324,7 @@ async function setupCountryList(): Promise<void> {
   // Use statically imported countries data
   // Process countries data and organize by continent
   const countriesByContinent = processCountriesData(countries);
-  const popupService = PopupService.getInstance();
-  await popupService.setCountryLookupCache('byContinent', countriesByContinent);
+  await setCountryLookupCache('byContinent', countriesByContinent);
 
   // Create continent groups
   Object.entries(continents).forEach(([continentCode, continentName]) => {
@@ -514,8 +521,7 @@ async function updateContinentCheckbox(continentCode: string): Promise<void> {
   ) as HTMLInputElement;
   if (!continentCheckbox) return;
 
-  const popupService = PopupService.getInstance();
-  const cacheData = await popupService.getCountryLookupCache();
+  const cacheData = await getCountryLookupCache();
   const countriesByContinent = (cacheData?.byContinent || {}) as Record<
     string,
     Record<string, string>
@@ -558,10 +564,7 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
 // Save settings to background
 async function saveSettingsToBackground(): Promise<void> {
   try {
-    await browser.runtime.sendMessage({
-      type: 'saveSettings',
-      settings: settings,
-    });
+    await saveSettings(settings);
   } catch (error) {
     void error;
   }
@@ -570,21 +573,18 @@ async function saveSettingsToBackground(): Promise<void> {
 // Save rules to background
 async function saveRulesToBackground(): Promise<void> {
   try {
-    await browser.runtime.sendMessage({
-      type: 'saveRules',
-      rules: rules,
-    });
+    await saveRulesToBackground_(rules);
 
     // Update rule count after saving rules
     await updateRuleCount();
 
     // Check if we're approaching the limit and show a notification if needed
-    const result = await browser.storage.local.get('ruleCount');
+    const result = await browser.storage.local.get(['ruleCount']);
     const ruleCount = (result as { ruleCount?: number }).ruleCount || 0;
 
     if (ruleCount > 4500) {
-      // Get rule limit from background script instead of accessing ServiceFactory directly
-      const ruleLimit = (await browser.runtime.sendMessage({ type: 'getRuleLimit' })) as number;
+      // Get rule limit from background script
+      const ruleLimit = await getRuleLimit();
       toast.show(`Warning: Using ${ruleCount}/${ruleLimit} rules`, 'info');
     }
   } catch (error) {

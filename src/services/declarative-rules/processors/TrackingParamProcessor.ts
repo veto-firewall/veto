@@ -1,5 +1,5 @@
 /**
- * Processor for tracking parameter removal rules
+ * Processor for tracking parameter removal rules - Function-based version
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
 import type { RuleSet } from '../../types';
@@ -45,7 +45,7 @@ export class TrackingParamProcessor extends BaseProcessor {
         },
       });
 
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     return dnrRules;

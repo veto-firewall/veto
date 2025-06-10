@@ -1,5 +1,5 @@
 /**
- * Processor for basic declarative rules
+ * Processor for basic declarative rules - Function-based version
  * Handles HTTP redirect/block and resource type blocking
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
@@ -34,7 +34,7 @@ export class BasicRuleProcessor extends BaseProcessor {
           resourceTypes: ALL_RESOURCE_TYPES,
         },
       });
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     } else if (settings.httpHandling === 'block') {
       basicRules.push({
         id: ruleId++,
@@ -45,7 +45,7 @@ export class BasicRuleProcessor extends BaseProcessor {
           resourceTypes: ALL_RESOURCE_TYPES,
         },
       });
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     // Block resources by type
@@ -58,7 +58,7 @@ export class BasicRuleProcessor extends BaseProcessor {
           resourceTypes: ['font'],
         },
       });
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     if (settings.blockImages) {
@@ -70,7 +70,7 @@ export class BasicRuleProcessor extends BaseProcessor {
           resourceTypes: ['image', 'imageset'],
         },
       });
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     if (settings.blockMedia) {
@@ -82,7 +82,7 @@ export class BasicRuleProcessor extends BaseProcessor {
           resourceTypes: ['media'],
         },
       });
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     return basicRules;

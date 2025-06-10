@@ -89,7 +89,7 @@ export default [
       ],
       
       // === Complexity Control ===
-      'complexity': ['warn', 21],
+      'complexity': ['warn', 22],
       'max-depth': ['warn', 4],
       'max-lines': ['warn', 650],
       'max-lines-per-function': ['warn', 120],

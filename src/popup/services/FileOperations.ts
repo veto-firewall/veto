@@ -1,5 +1,10 @@
 /**
  * Export rules to a file
+ */
+import { exportRules as exportRulesFromBackground } from './BackgroundMessagingService';
+
+/**
+ * Export rules to a file
  *
  * @param baseId - The base ID of the rule element
  * @returns Promise that resolves when export is complete
@@ -26,11 +31,7 @@ export async function exportRules(baseId: string): Promise<void> {
         'blocked-regex',
       ].includes(baseId);
 
-      const result = (await browser.runtime.sendMessage({
-        type: 'exportRules',
-        ruleType: baseId,
-        includeComments: includeComments,
-      })) as string | Record<string, unknown>;
+      const result = await exportRulesFromBackground(baseId, includeComments);
 
       if (typeof result === 'string') {
         ruleContent = result;

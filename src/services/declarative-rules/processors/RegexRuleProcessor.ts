@@ -1,5 +1,5 @@
 /**
- * Processor for regex-based declarative rules
+ * Processor for regex-based declarative rules - Function-based version
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
 import type { Rule } from '../../types';
@@ -46,7 +46,7 @@ export class RegexRuleProcessor extends BaseProcessor {
         },
       });
 
-      this.service.incrementRuleCount();
+      this.incrementRuleCount();
     }
 
     return dnrRules;
