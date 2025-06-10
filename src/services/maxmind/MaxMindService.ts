@@ -298,15 +298,39 @@ export class MaxMindService {
       const countryUrl = `${baseUrl}-Country${suffix}`;
       const asnUrl = `${baseUrl}-ASN${suffix}`;
 
-      const [countryResponse, asnResponse] = await Promise.all([fetch(countryUrl), fetch(asnUrl)]);
+      const fetchWithRetry = async (url: string, retries = 3): Promise<Response> => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const response = await fetch(url, {
+              mode: 'cors',
+              credentials: 'omit',
+              headers: {
+                Accept: '*/*',
+              },
+            });
 
-      if (!countryResponse.ok || !asnResponse.ok) {
-        console.error('Failed to download MaxMind databases', {
-          countryStatus: countryResponse.status,
-          countryStatusText: countryResponse.statusText,
-          asnStatus: asnResponse.status,
-          asnStatusText: asnResponse.statusText,
-        });
+            if (response.ok) {
+              return response;
+            }
+
+            // If response is not ok but we got a response, throw with status
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          } catch (error) {
+            if (i === retries - 1) throw error; // Last retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+          }
+        }
+        throw new Error('All retries failed');
+      };
+
+      let countryResponse, asnResponse;
+      try {
+        [countryResponse, asnResponse] = await Promise.all([
+          fetchWithRetry(countryUrl),
+          fetchWithRetry(asnUrl),
+        ]);
+      } catch (error) {
+        console.error('Failed to download MaxMind databases:', error);
         return false;
       }
 
