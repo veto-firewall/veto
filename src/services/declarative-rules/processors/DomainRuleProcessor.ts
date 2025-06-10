@@ -3,6 +3,7 @@
  */
 import { BaseProcessor, ALL_RESOURCE_TYPES } from './BaseProcessor';
 import type { Rule } from '../../types';
+import { MAX_REGEX_LENGTH } from '../DeclarativeRuleService';
 
 /**
  * Handles creation of domain and URL-based declarative network rules
@@ -18,8 +19,7 @@ export class DomainRuleProcessor extends BaseProcessor {
    */
   constructor() {
     super();
-    // Set a default max regex length (Firefox limitation)
-    this.maxRegexLength = 1024;
+    this.maxRegexLength = MAX_REGEX_LENGTH;
   }
 
   /**

@@ -41,7 +41,7 @@ let ruleLimit: number = 5000; // Default fallback value
 /**
  * Max length of regex pattern (Firefox limitation)
  */
-const MAX_REGEX_LENGTH = 1024;
+export const MAX_REGEX_LENGTH = 1024;
 
 /**
  * Mutex to prevent concurrent rule updates
