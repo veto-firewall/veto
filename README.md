@@ -1,5 +1,8 @@
 # Simple Firewall For Your Browser
 
+> [!WARNING]
+> The extension has not received external security review and may contain vulnerabilities. Do not use for sensitive use cases, and do not rely on its security until it has been reviewed. Work in progress.
+
 <div align="center">
   <img src="assets/images/icon-128.png" alt="VETO Logo" width="128" height="128">
 </div>
