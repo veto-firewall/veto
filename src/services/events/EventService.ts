@@ -32,6 +32,11 @@ import { MaxMindService } from '../maxmind/MaxMindService';
 const maxMindService = new MaxMindService();
 
 /**
+ * Track if event listeners have been set up to prevent duplicates
+ */
+let listenersSetup = false;
+
+/**
  * Current settings
  */
 let settings: Settings = {} as Settings;
@@ -46,22 +51,41 @@ let rules: RuleSet = {} as RuleSet;
  * @returns Promise that resolves when initialization is complete
  */
 export async function initialize(): Promise<void> {
-  // Load settings and rules
-  settings = await getSettings();
-  rules = await getRules();
-
-  // Initialize MaxMind service
   try {
-    await maxMindService.initialize();
-  } catch (error) {
-    console.error('Failed to initialize MaxMind service:', error);
-  }
+    // Load settings and rules
+    settings = await getSettings();
+    rules = await getRules();
 
-  // Set up event listeners
-  setupMessageListener();
-  setupWebRequestListeners();
-  setupBrowserShutdownListener();
-  setupAndroidSupport();
+    // Initialize MaxMind service in background (non-blocking)
+    // Don't await this to prevent it from blocking the entire initialization
+    maxMindService.initialize().catch(error => {
+      console.warn('MaxMind service initialization failed (non-critical):', error);
+    });
+
+    // Set up event listeners only if not already set up
+    if (!listenersSetup) {
+      setupMessageListener();
+      setupWebRequestListeners();
+      setupBrowserShutdownListener();
+      setupAndroidSupport();
+      listenersSetup = true;
+      console.log('Event listeners set up');
+    } else {
+      console.log('Event listeners already set up, skipping setup');
+    }
+
+    console.log('Event service initialized successfully');
+  } catch (error) {
+    console.error('Critical error in event service initialization:', error);
+    // Still set up basic event listeners even if other parts fail
+    if (!listenersSetup) {
+      setupMessageListener();
+      setupWebRequestListeners();
+      setupAndroidSupport();
+      listenersSetup = true;
+      console.log('Fallback: Basic event listeners set up');
+    }
+  }
 
   return Promise.resolve();
 }
@@ -155,6 +179,9 @@ function handleMessage(
 
     case 'getRuleLimit':
       return Promise.resolve(handleGetRuleLimit());
+
+    case 'ping':
+      return Promise.resolve({ success: true, timestamp: Date.now() });
 
     default: {
       // The message is of type 'never' at this point due to exhaustive type checking

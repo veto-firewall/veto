@@ -104,6 +104,13 @@ export interface MsgParseRules extends MessageBase {
 }
 
 /**
+ * Ping message for health check
+ */
+export interface MsgPing extends MessageBase {
+  type: 'ping';
+}
+
+/**
  * Union of all extension message types
  */
 export type ExtensionMsg =
@@ -116,7 +123,8 @@ export type ExtensionMsg =
   | MsgGetCountryLookupCache
   | MsgSetCountryLookupCache
   | MsgGetRuleLimit
-  | MsgParseRules;
+  | MsgParseRules
+  | MsgPing;
 
 /**
  * Response type for extension messages
@@ -141,4 +149,6 @@ export type MsgResponse<T extends ExtensionMsg> = T extends MsgGetSettings
                   ? number
                   : T extends MsgParseRules
                     ? import('./ruleTypes').Rule[]
-                    : never;
+                    : T extends MsgPing
+                      ? { success: boolean; timestamp: number }
+                      : never;
