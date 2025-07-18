@@ -1,6 +1,8 @@
 ## Firefox Extension .gitignore
 
 # Dependencies
+playwright-report/
+test-results/
 node_modules/
 npm-debug.log
 yarn-error.log
