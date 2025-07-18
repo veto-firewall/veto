@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:performance": "playwright test tests/e2e/performance",
+    "test:functional": "playwright test tests/e2e/functional",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install firefox"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^24.0.14"
+  }
+}
