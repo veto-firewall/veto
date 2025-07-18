@@ -23,8 +23,13 @@ import {
 // Import function-based logging service
 import { logBlockedRequest } from '../logging/LoggingService';
 
-// Still need ServiceFactory for services that haven't been converted
-import { ServiceFactory } from '../ServiceFactory';
+// Direct import of MaxMind service
+import { MaxMindService } from '../maxmind/MaxMindService';
+
+/**
+ * Module-level MaxMind service instance
+ */
+const maxMindService = new MaxMindService();
 
 /**
  * Current settings
@@ -44,6 +49,13 @@ export async function initialize(): Promise<void> {
   // Load settings and rules
   settings = await getSettings();
   rules = await getRules();
+
+  // Initialize MaxMind service
+  try {
+    await maxMindService.initialize();
+  } catch (error) {
+    console.error('Failed to initialize MaxMind service:', error);
+  }
 
   // Set up event listeners
   setupMessageListener();
@@ -190,15 +202,13 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
       // Handle MaxMind license key change
       if (maxMindLicenseKeyChanged) {
         try {
-          // For now, we'll handle MaxMind updates through the service factory
-          // until MaxMindService is fully converted to functions
-          const maxMindService = ServiceFactory.getInstance().getMaxMindService();
+          // Direct MaxMind service access
           await maxMindService.updateConfig({
             licenseKey: msgSaveSettings.settings.maxmind.licenseKey,
             lastDownload: settings.maxmind.lastDownload,
           });
 
-          // Refresh MaxMind service and related components
+          // Refresh MaxMind service
           const _refreshSuccess = await maxMindService.refreshService();
         } catch (error) {
           console.error('Error refreshing MaxMind services:', error);

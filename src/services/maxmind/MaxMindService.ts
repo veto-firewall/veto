@@ -5,7 +5,6 @@
 import { getSettings, saveSettings, getValue, setValue } from '../storage/StorageService';
 import { getGeoIpCache, getAsnCache } from '../cache/CacheService';
 import { isValid as _isValid } from 'ipaddr.js';
-import { ServiceFactory } from '../ServiceFactory';
 // Static imports instead of dynamic imports
 import { Reader } from 'mmdb-lib';
 import type { CountryResponse, AsnResponse } from 'mmdb-lib/lib/reader/response';
@@ -531,7 +530,7 @@ let maxMindServiceInstance: MaxMindService | null = null;
  */
 function getMaxMindInstance(): MaxMindService {
   if (!maxMindServiceInstance) {
-    maxMindServiceInstance = ServiceFactory.getInstance().getMaxMindService();
+    maxMindServiceInstance = new MaxMindService();
   }
   return maxMindServiceInstance!;
 }
