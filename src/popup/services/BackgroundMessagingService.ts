@@ -1,6 +1,6 @@
 /**
  * Background Messaging Service
- * Centralizes all popup ↔ background communication with proper typing
+ * Handles popup ↔ background communication for operations requiring background context
  */
 import type { Settings, RuleSet, ExtensionMsg } from '../../services/types';
 
@@ -14,15 +14,7 @@ export const sendBackgroundMessage = async <T>(message: ExtensionMsg): Promise<T
 };
 
 /**
- * Get settings from background
- * @returns Promise resolving to current settings
- */
-export const getSettings = async (): Promise<Settings> => {
-  return sendBackgroundMessage<Settings>({ type: 'getSettings' });
-};
-
-/**
- * Save settings to background
+ * Save settings to background (triggers rule updates and service refresh)
  * @param settings - Settings to save
  * @returns Promise resolving to success status
  */
@@ -34,15 +26,7 @@ export const saveSettings = async (settings: Settings): Promise<{ success: boole
 };
 
 /**
- * Get rules from background
- * @returns Promise resolving to current rules
- */
-export const getRules = async (): Promise<RuleSet> => {
-  return sendBackgroundMessage<RuleSet>({ type: 'getRules' });
-};
-
-/**
- * Save rules to background
+ * Save rules to background (triggers rule updates)
  * @param rules - Rules to save
  * @returns Promise resolving to success status
  */
@@ -54,24 +38,7 @@ export const saveRules = async (rules: RuleSet): Promise<{ success: boolean }> =
 };
 
 /**
- * Export rules as text
- * @param ruleType - Type of rules to export
- * @param includeComments - Whether to include comments in output
- * @returns Promise resolving to rules text
- */
-export const exportRules = async (
-  ruleType: string,
-  includeComments: boolean = false,
-): Promise<string> => {
-  return sendBackgroundMessage<string>({
-    type: 'exportRules',
-    ruleType,
-    includeComments,
-  });
-};
-
-/**
- * Clear all caches
+ * Clear all caches in background
  * @returns Promise resolving to success status
  */
 export const clearCache = async (): Promise<{ success: boolean }> => {
@@ -79,7 +46,7 @@ export const clearCache = async (): Promise<{ success: boolean }> => {
 };
 
 /**
- * Get country lookup cache
+ * Get country lookup cache from background
  * @returns Promise resolving to the country lookup cache
  */
 export const getCountryLookupCache = async (): Promise<
@@ -92,7 +59,7 @@ export const getCountryLookupCache = async (): Promise<
 };
 
 /**
- * Set country lookup cache
+ * Set country lookup cache in background
  * @param key - Cache key
  * @param value - Value to cache
  * @returns Promise resolving to success status
@@ -114,27 +81,4 @@ export const setCountryLookupCache = async (
  */
 export const getRuleLimit = async (): Promise<number> => {
   return sendBackgroundMessage<number>({ type: 'getRuleLimit' });
-};
-
-/**
- * Parse rules text into rule objects
- * @param ruleType - Type of rules to parse
- * @param rulesText - Raw rules text
- * @param actionType - Action type for rules
- * @param isTerminating - Whether rules are terminating
- * @returns Promise resolving to parsed rules
- */
-export const parseRules = async (
-  ruleType: 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
-  rulesText: string,
-  actionType: 'allow' | 'block' | 'redirect',
-  isTerminating: boolean,
-): Promise<unknown> => {
-  return sendBackgroundMessage({
-    type: 'parseRules',
-    ruleType,
-    rulesText,
-    actionType,
-    isTerminating,
-  });
 };

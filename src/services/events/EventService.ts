@@ -2,17 +2,11 @@
  * EventService handles browser event management
  * Centralizes message handling and web request interception
  */
-import type {
-  ExtensionMsg,
-  MsgSaveSettings,
-  MsgSaveRules,
-  MsgExportRules,
-  MsgParseRules,
-} from '../types';
-import type { Settings, RuleSet, Rule } from '../types';
+import type { ExtensionMsg, MsgSaveSettings, MsgSaveRules } from '../types';
+import type { Settings, RuleSet } from '../types';
 
 // Function imports from converted services
-import { getRules, saveRules, exportRules, parseRules, processRules } from '../rule/RuleService';
+import { getRules, saveRules, processRules } from '../rule/RuleService';
 
 // Service imports - these may still be class-based or function-based
 import { getSettings, saveSettings } from '../storage/StorageService';
@@ -138,10 +132,6 @@ function handleMessage(
 
   // Route messages to appropriate handlers to reduce method complexity
   switch (message.type) {
-    case 'getSettings':
-    case 'getRules':
-      return handleGetMessages(message);
-
     case 'saveSettings':
     case 'saveRules':
       return handleSaveMessages(message);
@@ -151,14 +141,8 @@ function handleMessage(
     case 'clearCache':
       return handleCacheMessages(message);
 
-    case 'exportRules':
-      return handleExportMessages(message);
-
     case 'getRuleLimit':
       return Promise.resolve(handleGetRuleLimit());
-
-    case 'parseRules':
-      return Promise.resolve(handleParseRules(message));
 
     default: {
       // The message is of type 'never' at this point due to exhaustive type checking
@@ -170,22 +154,6 @@ function handleMessage(
       console.warn(`Unknown message type: ${unknownMsg.type || 'undefined'}`);
       return Promise.resolve({ success: false, error: 'Unknown message type' });
     }
-  }
-}
-
-/**
- * Handle get-type messages like getSettings and getRules
- * @param message - Message to handle
- * @returns Promise resolving to settings or rules
- */
-async function handleGetMessages(message: ExtensionMsg): Promise<Settings | RuleSet> {
-  switch (message.type) {
-    case 'getSettings':
-      return getSettings();
-    case 'getRules':
-      return getRules();
-    default:
-      throw new Error(`Invalid get message type: ${message.type}`);
   }
 }
 
@@ -298,55 +266,11 @@ async function handleCacheMessages(message: ExtensionMsg): Promise<unknown> {
 }
 
 /**
- * Handle export-related messages
- * @param message - Message to handle
- * @returns Promise resolving to exported rules as text
- */
-async function handleExportMessages(message: ExtensionMsg): Promise<string> {
-  if (message.type !== 'exportRules') {
-    throw new Error(`Invalid export message type: ${message.type}`);
-  }
-
-  const msgExportRules = message as MsgExportRules;
-
-  // Normalize any hyphenated rule type to camelCase
-  let ruleType = msgExportRules.ruleType;
-  if (typeof ruleType === 'string' && ruleType.includes('-')) {
-    ruleType = ruleType.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
-  }
-
-  return await exportRules(ruleType, msgExportRules.includeComments || false);
-}
-
-/**
  * Handle getRuleLimit message
  * @returns The maximum number of rules allowed by the browser
  */
 function handleGetRuleLimit(): number {
   return getRuleLimit();
-}
-
-/**
- * Handle parseRules message
- * @param message - Message to handle
- * @returns Promise resolving to parsed rules
- */
-function handleParseRules(message: ExtensionMsg): Rule[] {
-  if (message.type !== 'parseRules') {
-    throw new Error(`Invalid parse rules message type: ${message.type}`);
-  }
-
-  const msgParseRules = message as MsgParseRules;
-
-  if (['domain', 'url', 'regex', 'ip', 'asn', 'tracking'].includes(msgParseRules.ruleType)) {
-    return parseRules(
-      msgParseRules.ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
-      msgParseRules.rulesText,
-      msgParseRules.actionType as 'allow' | 'block' | 'redirect',
-      msgParseRules.isTerminating,
-    );
-  }
-  return [];
 }
 
 /**

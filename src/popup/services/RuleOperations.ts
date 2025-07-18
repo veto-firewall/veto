@@ -1,9 +1,9 @@
 /**
  * Rule operations for handling textarea content and filter file loading
- * Clean implementation with proper extension resource loading
+ * Uses direct service imports for better performance and simplicity
  */
 import type { Rule, RuleSet } from '../../services/types';
-import { parseRules } from './BackgroundMessagingService';
+import { parseRules, getFilterFileContent } from '../../services/rule/RuleService';
 
 /**
  * Parse rules for a specific rule type
@@ -88,7 +88,7 @@ export function updateRulesInStore(baseId: string, newRules: Rule[], rules: Rule
 
 /**
  * Populate a textarea with rules or filter file content
- * Uses proper extension resource loading instead of fetch()
+ * Uses direct service import for filter file loading
  *
  * @param textareaId - ID of the textarea element
  * @param ruleList - List of rules to display
@@ -109,34 +109,26 @@ export async function populateRuleTextarea(textareaId: string, ruleList: Rule[])
   }
   // If there are no rules, try to load content from filter files
   else {
-    let fileContent = '';
-
     // Map textarea IDs to filter file names
     const fileMap: Record<string, string> = {
-      'allowed-asns': 'ASNs',
-      'blocked-asns': 'ASNs',
-      'allowed-domains': 'DomainNames',
-      'blocked-domains': 'DomainNames',
-      'allowed-ips': 'IPs',
-      'blocked-ips': 'IPs',
-      'allowed-regex': 'Regex',
-      'blocked-regex': 'Regex',
-      'tracking-params': 'Trackers',
-      'allowed-urls': 'URLs',
-      'blocked-urls': 'URLs',
+      'allowed-asns': 'ASNs.txt',
+      'blocked-asns': 'ASNs.txt',
+      'allowed-domains': 'DomainNames.txt',
+      'blocked-domains': 'DomainNames.txt',
+      'allowed-ips': 'IPs.txt',
+      'blocked-ips': 'IPs.txt',
+      'allowed-regex': 'Regex.txt',
+      'blocked-regex': 'Regex.txt',
+      'tracking-params': 'Trackers.txt',
+      'allowed-urls': 'URLs.txt',
+      'blocked-urls': 'URLs.txt',
     };
 
     // If this textarea has a matching filter file
     if (fileMap[textareaId]) {
       try {
-        // Use browser.runtime.getURL for proper extension resource loading
-        const fileUrl = browser.runtime.getURL(`filters/${fileMap[textareaId]}.txt`);
-        const response = await fetch(fileUrl);
-
-        if (response.ok) {
-          fileContent = await response.text();
-          textarea.value = fileContent;
-        }
+        const fileContent = await getFilterFileContent(fileMap[textareaId]);
+        textarea.value = fileContent;
       } catch (error) {
         console.error(`Error loading filter file for ${textareaId}:`, error);
       }

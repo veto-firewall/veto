@@ -9,10 +9,14 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
+
+// Direct service imports
+import { getSettings } from '../services/storage/StorageService';
+import { getRules } from '../services/storage/StorageService';
+
+// Background messaging for operations requiring background context
 import {
-  getSettings,
-  saveSettings,
-  getRules,
+  saveSettings as saveSettingsWithBackground,
   saveRules as saveRulesToBackground_,
   getRuleLimit,
   getCountryLookupCache,
@@ -564,7 +568,7 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
 // Save settings to background
 async function saveSettingsToBackground(): Promise<void> {
   try {
-    await saveSettings(settings);
+    await saveSettingsWithBackground(settings);
   } catch (error) {
     void error;
   }
