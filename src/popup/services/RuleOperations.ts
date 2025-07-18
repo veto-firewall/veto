@@ -1,9 +1,9 @@
 /**
  * Rule operations for handling textarea content and filter file loading
- * Clean implementation with proper extension resource loading
+ * Uses direct service imports for better performance and simplicity
  */
 import type { Rule, RuleSet } from '../../services/types';
-import { parseRules } from './BackgroundMessagingService';
+import { parseRules } from '../../services/rule/RuleService';
 
 /**
  * Parse rules for a specific rule type
@@ -88,7 +88,7 @@ export function updateRulesInStore(baseId: string, newRules: Rule[], rules: Rule
 
 /**
  * Populate a textarea with rules or filter file content
- * Uses proper extension resource loading instead of fetch()
+ * Uses direct service import for filter file loading
  *
  * @param textareaId - ID of the textarea element
  * @param ruleList - List of rules to display

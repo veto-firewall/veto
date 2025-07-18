@@ -1,7 +1,7 @@
 /**
  * Export rules to a file
  */
-import { exportRules as exportRulesFromBackground } from './BackgroundMessagingService';
+import { exportRules as exportRulesFromService } from '../../services/rule/RuleService';
 
 /**
  * Export rules to a file
@@ -16,7 +16,7 @@ export async function exportRules(baseId: string): Promise<void> {
       return;
     }
 
-    // Get rules content from background
+    // Get rules content from service
     let ruleContent = '';
     try {
       // Determine if we should include comments based on the content type
@@ -31,7 +31,7 @@ export async function exportRules(baseId: string): Promise<void> {
         'blocked-regex',
       ].includes(baseId);
 
-      const result = await exportRulesFromBackground(baseId, includeComments);
+      const result = await exportRulesFromService(baseId, includeComments);
 
       if (typeof result === 'string') {
         ruleContent = result;
@@ -42,7 +42,7 @@ export async function exportRules(baseId: string): Promise<void> {
       }
     } catch (error) {
       void error;
-      // In case of background communication error, get content directly from textarea
+      // In case of service error, get content directly from textarea
       ruleContent = textarea?.value || '';
     }
 

@@ -9,15 +9,88 @@ import {
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
-import {
-  getSettings,
-  saveSettings,
-  getRules,
-  saveRules as saveRulesToBackground_,
-  getRuleLimit,
-  getCountryLookupCache,
-  setCountryLookupCache,
-} from './services/BackgroundMessagingService';
+
+// Direct service imports
+import { getSettings } from '../services/storage/StorageService';
+import { getRules } from '../services/storage/StorageService';
+
+// Type definitions for background script responses
+interface SaveResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface RuleLimitResponse {
+  ruleLimit: number;
+}
+
+interface CountryLookupCacheResponse {
+  byContinent?: Record<string, Record<string, string>>;
+  [key: string]: unknown;
+}
+
+interface PingResponse {
+  success: boolean;
+  timestamp: number;
+}
+
+// Helper functions to communicate with background script
+async function saveSettingsWithBackground(settings: Settings): Promise<void> {
+  const response = (await browser.runtime.sendMessage({
+    type: 'saveSettings',
+    settings: settings,
+  })) as SaveResponse;
+  if (!response?.success) {
+    throw new Error('Failed to save settings');
+  }
+}
+
+async function saveRulesToBackgroundService(rules: RuleSet): Promise<void> {
+  const response = (await browser.runtime.sendMessage({
+    type: 'saveRules',
+    rules: rules,
+  })) as SaveResponse;
+  if (!response?.success) {
+    throw new Error('Failed to save rules');
+  }
+}
+
+async function getRuleLimit(): Promise<number> {
+  const response = (await browser.runtime.sendMessage({
+    type: 'getRuleLimit',
+  })) as RuleLimitResponse;
+  return response?.ruleLimit || 0;
+}
+
+async function getCountryLookupCache(): Promise<CountryLookupCacheResponse> {
+  const response = (await browser.runtime.sendMessage({
+    type: 'getCountryLookupCache',
+  })) as CountryLookupCacheResponse;
+  return response;
+}
+
+async function setCountryLookupCache(
+  type: string,
+  data: Record<string, Record<string, string>>,
+): Promise<void> {
+  (await browser.runtime.sendMessage({
+    type: 'setCountryLookupCache',
+    cacheType: type,
+    data: data,
+  })) as SaveResponse;
+}
+
+async function pingBackground(): Promise<boolean> {
+  try {
+    const response = (await browser.runtime.sendMessage({
+      type: 'ping',
+    })) as PingResponse;
+    return response?.success === true;
+  } catch (error) {
+    console.error('Failed to ping background script:', error);
+    return false;
+  }
+}
 
 // Static import of countries data
 import { countries, continents } from 'countries-list';
@@ -65,6 +138,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.classList.add('loading');
 
   try {
+    // First, check if background script is responsive
+    console.log('Checking background script availability...');
+    const isBackgroundResponsive = await pingBackground();
+
+    if (!isBackgroundResponsive) {
+      // Wait a bit and try again - background script might be starting up
+      console.log('Background script not responsive, waiting and retrying...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const secondTry = await pingBackground();
+      if (!secondTry) {
+        throw new Error('Background script is not responding. Try reloading the extension.');
+      }
+    }
+
+    console.log('Background script is responsive, proceeding with initialization...');
+
     await loadSettings();
     initSectionExpansion();
     await loadRules();
@@ -85,8 +175,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.classList.remove('loading');
   } catch (error) {
     document.body.classList.remove('loading');
-    void error;
-    toast.show('Failed to initialize', 'error');
+    console.error('Popup initialization error:', error);
+
+    // Show more helpful error message
+    if (error instanceof Error) {
+      toast.show(`Initialization failed: ${error.message}`, 'error');
+    } else {
+      toast.show('Failed to initialize - Try refreshing or check background script', 'error');
+    }
+
+    // Try to reinitialize the background script
+    try {
+      console.log('Attempting to reinitialize background script...');
+      // This should trigger background script reinitialization
+      await browser.runtime.sendMessage({ type: 'ping' });
+    } catch (reinitError) {
+      console.error('Background script appears to be unresponsive:', reinitError);
+    }
   }
 });
 
@@ -522,10 +627,8 @@ async function updateContinentCheckbox(continentCode: string): Promise<void> {
   if (!continentCheckbox) return;
 
   const cacheData = await getCountryLookupCache();
-  const countriesByContinent = (cacheData?.byContinent || {}) as Record<
-    string,
-    Record<string, string>
-  >;
+  const countriesByContinent =
+    (cacheData?.byContinent as unknown as Record<string, Record<string, string>>) || {};
   if (!countriesByContinent || !countriesByContinent[continentCode]) return;
 
   const allCountries = Object.keys(countriesByContinent[continentCode]);
@@ -564,7 +667,7 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
 // Save settings to background
 async function saveSettingsToBackground(): Promise<void> {
   try {
-    await saveSettings(settings);
+    await saveSettingsWithBackground(settings);
   } catch (error) {
     void error;
   }
@@ -573,7 +676,7 @@ async function saveSettingsToBackground(): Promise<void> {
 // Save rules to background
 async function saveRulesToBackground(): Promise<void> {
   try {
-    await saveRulesToBackground_(rules);
+    await saveRulesToBackgroundService(rules);
 
     // Update rule count after saving rules
     await updateRuleCount();

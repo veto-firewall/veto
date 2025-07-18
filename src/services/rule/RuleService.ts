@@ -280,10 +280,13 @@ export function clearProcessorCache(): void {
  */
 export async function getFilterFileContent(fileName: string): Promise<string> {
   try {
-    const response = await fetch(`/filters/${fileName}.txt`);
+    // Use browser.runtime.getURL to get the correct extension URL
+    const url = browser.runtime.getURL(`filters/${fileName}.txt`);
+    const response = await fetch(url);
     if (response.ok) {
       return await response.text();
     }
+    console.error(`Failed to load filter file ${fileName}: HTTP ${response.status}`);
   } catch (error) {
     console.error(`Failed to load filter file ${fileName}:`, error);
   }

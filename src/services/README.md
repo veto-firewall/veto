@@ -3,15 +3,11 @@
 This directory contains service modules that form the core architecture of the Veto extension. The service-based approach provides:
 
 1. **Clear Separation of Concerns** - Each service has a distinct responsibility
-2. **Dependency Injection** - Services are injected where needed rather than imported directly
+2. **Direct Imports** - Services are imported directly where needed for simplicity
 3. **Improved Testability** - Modular design makes unit testing easier
 4. **Centralized State Management** - Services maintain state and handle operations on that state
 
 ## Service Overview
-
-### ServiceFactory
-
-`ServiceFactory` is the central point for accessing all services. It handles lazy initialization and dependency management.
 
 ### StorageService
 
@@ -59,25 +55,13 @@ Rule processors handle specific types of rules:
 
 ## Usage
 
-Services should be accessed through the ServiceFactory:
+Services should be imported directly:
 
 ```typescript
-import { ServiceFactory } from '../services/ServiceFactory';
+import { getSettings, saveSettings } from '../services/storage/StorageService';
+import { parseRules, exportRules } from '../services/rule/RuleService';
 
-// Get a service instance
-const storageService = ServiceFactory.getInstance().getStorageService();
-const ruleService = ServiceFactory.getInstance().getRuleService();
-
-// Use the service
-await storageService.getSettings();
-await ruleService.getRules();
-```
-
-In the background script, the factory is exported for convenience:
-
-```typescript
-import { serviceFactory } from '../background';
-
-// Get a service instance
-const storageService = serviceFactory.getStorageService();
+// Use the services directly
+await getSettings();
+await parseRules('domain', rulesText, 'block', false);
 ```

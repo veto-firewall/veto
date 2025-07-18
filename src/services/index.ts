@@ -1,16 +1,37 @@
 /**
- * Services module exports
+ * Services module
+ * Provides centralized exports for all service modules
  */
-// Export all types from the types directory
-export * from './types/index';
 
-// Export services
-export * from './ServiceFactory';
-export * from './storage';
-export * from './rule';
-export * from './network';
-export * from './maxmind';
-export * from './events';
+// Export types
+export * from './types';
+
+// Export cache services
 export * from './cache';
+
+// Export storage services
+export * from './storage';
+
+// Export rule services
+export { parseRules, exportRules, processRules, getFilterFileContent, getRulesText } from './rule';
+
+// Export network services
+export * from './network';
+
+// Export MaxMind services
+export * from './maxmind';
+
+// Export logging services
 export * from './logging';
-export * from './declarative-rules';
+
+// Export event services
+export { initialize as initializeEvents } from './events';
+
+// Export declarative rule services
+export {
+  initialize as initializeDeclarativeRules,
+  setupRules,
+  getRuleCount,
+  getRuleLimit,
+  updateSuspendSetting,
+} from './declarative-rules';

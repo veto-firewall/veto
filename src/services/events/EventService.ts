@@ -2,17 +2,11 @@
  * EventService handles browser event management
  * Centralizes message handling and web request interception
  */
-import type {
-  ExtensionMsg,
-  MsgSaveSettings,
-  MsgSaveRules,
-  MsgExportRules,
-  MsgParseRules,
-} from '../types';
-import type { Settings, RuleSet, Rule } from '../types';
+import type { ExtensionMsg, MsgSaveSettings, MsgSaveRules } from '../types';
+import type { Settings, RuleSet } from '../types';
 
 // Function imports from converted services
-import { getRules, saveRules, exportRules, parseRules, processRules } from '../rule/RuleService';
+import { getRules, saveRules, processRules } from '../rule/RuleService';
 
 // Service imports - these may still be class-based or function-based
 import { getSettings, saveSettings } from '../storage/StorageService';
@@ -29,8 +23,18 @@ import {
 // Import function-based logging service
 import { logBlockedRequest } from '../logging/LoggingService';
 
-// Still need ServiceFactory for services that haven't been converted
-import { ServiceFactory } from '../ServiceFactory';
+// Direct import of MaxMind service
+import { MaxMindService } from '../maxmind/MaxMindService';
+
+/**
+ * Module-level MaxMind service instance
+ */
+const maxMindService = new MaxMindService();
+
+/**
+ * Track if event listeners have been set up to prevent duplicates
+ */
+let listenersSetup = false;
 
 /**
  * Current settings
@@ -47,15 +51,41 @@ let rules: RuleSet = {} as RuleSet;
  * @returns Promise that resolves when initialization is complete
  */
 export async function initialize(): Promise<void> {
-  // Load settings and rules
-  settings = await getSettings();
-  rules = await getRules();
+  try {
+    // Load settings and rules
+    settings = await getSettings();
+    rules = await getRules();
 
-  // Set up event listeners
-  setupMessageListener();
-  setupWebRequestListeners();
-  setupBrowserShutdownListener();
-  setupAndroidSupport();
+    // Initialize MaxMind service in background (non-blocking)
+    // Don't await this to prevent it from blocking the entire initialization
+    maxMindService.initialize().catch(error => {
+      console.warn('MaxMind service initialization failed (non-critical):', error);
+    });
+
+    // Set up event listeners only if not already set up
+    if (!listenersSetup) {
+      setupMessageListener();
+      setupWebRequestListeners();
+      setupBrowserShutdownListener();
+      setupAndroidSupport();
+      listenersSetup = true;
+      console.log('Event listeners set up');
+    } else {
+      console.log('Event listeners already set up, skipping setup');
+    }
+
+    console.log('Event service initialized successfully');
+  } catch (error) {
+    console.error('Critical error in event service initialization:', error);
+    // Still set up basic event listeners even if other parts fail
+    if (!listenersSetup) {
+      setupMessageListener();
+      setupWebRequestListeners();
+      setupAndroidSupport();
+      listenersSetup = true;
+      console.log('Fallback: Basic event listeners set up');
+    }
+  }
 
   return Promise.resolve();
 }
@@ -138,10 +168,6 @@ function handleMessage(
 
   // Route messages to appropriate handlers to reduce method complexity
   switch (message.type) {
-    case 'getSettings':
-    case 'getRules':
-      return handleGetMessages(message);
-
     case 'saveSettings':
     case 'saveRules':
       return handleSaveMessages(message);
@@ -151,14 +177,11 @@ function handleMessage(
     case 'clearCache':
       return handleCacheMessages(message);
 
-    case 'exportRules':
-      return handleExportMessages(message);
-
     case 'getRuleLimit':
       return Promise.resolve(handleGetRuleLimit());
 
-    case 'parseRules':
-      return Promise.resolve(handleParseRules(message));
+    case 'ping':
+      return Promise.resolve({ success: true, timestamp: Date.now() });
 
     default: {
       // The message is of type 'never' at this point due to exhaustive type checking
@@ -170,22 +193,6 @@ function handleMessage(
       console.warn(`Unknown message type: ${unknownMsg.type || 'undefined'}`);
       return Promise.resolve({ success: false, error: 'Unknown message type' });
     }
-  }
-}
-
-/**
- * Handle get-type messages like getSettings and getRules
- * @param message - Message to handle
- * @returns Promise resolving to settings or rules
- */
-async function handleGetMessages(message: ExtensionMsg): Promise<Settings | RuleSet> {
-  switch (message.type) {
-    case 'getSettings':
-      return getSettings();
-    case 'getRules':
-      return getRules();
-    default:
-      throw new Error(`Invalid get message type: ${message.type}`);
   }
 }
 
@@ -222,15 +229,13 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
       // Handle MaxMind license key change
       if (maxMindLicenseKeyChanged) {
         try {
-          // For now, we'll handle MaxMind updates through the service factory
-          // until MaxMindService is fully converted to functions
-          const maxMindService = ServiceFactory.getInstance().getMaxMindService();
+          // Direct MaxMind service access
           await maxMindService.updateConfig({
             licenseKey: msgSaveSettings.settings.maxmind.licenseKey,
             lastDownload: settings.maxmind.lastDownload,
           });
 
-          // Refresh MaxMind service and related components
+          // Refresh MaxMind service
           const _refreshSuccess = await maxMindService.refreshService();
         } catch (error) {
           console.error('Error refreshing MaxMind services:', error);
@@ -298,55 +303,11 @@ async function handleCacheMessages(message: ExtensionMsg): Promise<unknown> {
 }
 
 /**
- * Handle export-related messages
- * @param message - Message to handle
- * @returns Promise resolving to exported rules as text
- */
-async function handleExportMessages(message: ExtensionMsg): Promise<string> {
-  if (message.type !== 'exportRules') {
-    throw new Error(`Invalid export message type: ${message.type}`);
-  }
-
-  const msgExportRules = message as MsgExportRules;
-
-  // Normalize any hyphenated rule type to camelCase
-  let ruleType = msgExportRules.ruleType;
-  if (typeof ruleType === 'string' && ruleType.includes('-')) {
-    ruleType = ruleType.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
-  }
-
-  return await exportRules(ruleType, msgExportRules.includeComments || false);
-}
-
-/**
  * Handle getRuleLimit message
  * @returns The maximum number of rules allowed by the browser
  */
 function handleGetRuleLimit(): number {
   return getRuleLimit();
-}
-
-/**
- * Handle parseRules message
- * @param message - Message to handle
- * @returns Promise resolving to parsed rules
- */
-function handleParseRules(message: ExtensionMsg): Rule[] {
-  if (message.type !== 'parseRules') {
-    throw new Error(`Invalid parse rules message type: ${message.type}`);
-  }
-
-  const msgParseRules = message as MsgParseRules;
-
-  if (['domain', 'url', 'regex', 'ip', 'asn', 'tracking'].includes(msgParseRules.ruleType)) {
-    return parseRules(
-      msgParseRules.ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
-      msgParseRules.rulesText,
-      msgParseRules.actionType as 'allow' | 'block' | 'redirect',
-      msgParseRules.isTerminating,
-    );
-  }
-  return [];
 }
 
 /**
