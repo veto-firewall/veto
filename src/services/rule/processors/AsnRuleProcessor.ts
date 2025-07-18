@@ -4,7 +4,7 @@
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import type { RuleSet, Rule } from '../../types';
 import { resolveDomain } from '../../network/NetworkService';
-import { getAsnByIp } from '../../maxmind/MaxMindService';
+import { getAsnByIp, isNetworkFilteringAvailable } from '../../maxmind';
 
 /**
  * Handles processing of ASN-based rules
@@ -31,6 +31,12 @@ export class AsnRuleProcessor extends BaseRuleProcessor {
     cacheKey: string,
     details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null> {
+    // Check if network filtering is available with valid license
+    const networkFilteringAvailable = await isNetworkFilteringAvailable();
+    if (!networkFilteringAvailable) {
+      return null; // Skip ASN processing if no valid license
+    }
+
     if (this.rules.blockedAsns.length === 0 && this.rules.allowedAsns.length === 0) {
       return null;
     }

@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await updateRuleCount();
 
     // Initialize UI event handlers (for settings and export buttons)
-    setupUIEvents(settings, rules, saveSettingsToBackground, saveRulesToBackground);
+    await setupUIEvents(settings, rules, saveSettingsToBackground, saveRulesToBackground);
 
     // Setup rule save event listeners (for rule parsing and saving)
     setupRuleSaveEventListeners();

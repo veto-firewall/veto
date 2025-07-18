@@ -15,6 +15,9 @@ export * from './storage';
 // Export rule services
 export { parseRules, exportRules, processRules, getFilterFileContent, getRulesText } from './rule';
 
+// Export MaxMind services
+export * from './maxmind';
+
 // Export network services
 export * from './network';
 
