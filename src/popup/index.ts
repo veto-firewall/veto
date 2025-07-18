@@ -45,7 +45,7 @@ async function saveSettingsWithBackground(settings: Settings): Promise<void> {
   }
 }
 
-async function saveRulesToBackground_(rules: RuleSet): Promise<void> {
+async function saveRulesToBackgroundService(rules: RuleSet): Promise<void> {
   const response = (await browser.runtime.sendMessage({
     type: 'saveRules',
     rules: rules,
@@ -673,10 +673,10 @@ async function saveSettingsToBackground(): Promise<void> {
   }
 }
 
-// Save rules to background
+// Save rules to background  
 async function saveRulesToBackground(): Promise<void> {
   try {
-    await saveRulesToBackground_(rules);
+    await saveRulesToBackgroundService(rules);
 
     // Update rule count after saving rules
     await updateRuleCount();

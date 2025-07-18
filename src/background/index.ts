@@ -115,8 +115,15 @@ browser.runtime.onConnect.addListener(port => {
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   lastActivityTime = Date.now();
 
+  // Type guard for message
+  if (!message || typeof message !== 'object' || !('type' in message)) {
+    return false;
+  }
+
+  const typedMessage = message as { type: string };
+
   // If this is a ping message and we're not initialized, reinitialize
-  if (message?.type === 'ping' && needsReinitialization()) {
+  if (typedMessage.type === 'ping' && needsReinitialization()) {
     console.log('Ping received, extension needs reinitialization');
     void initExtension()
       .then(() => {
