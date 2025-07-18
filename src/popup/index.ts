@@ -673,7 +673,7 @@ async function saveSettingsToBackground(): Promise<void> {
   }
 }
 
-// Save rules to background  
+// Save rules to background
 async function saveRulesToBackground(): Promise<void> {
   try {
     await saveRulesToBackgroundService(rules);
