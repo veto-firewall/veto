@@ -970,3 +970,34 @@ details[open] .section-content {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================================
+   8. LICENSE-BASED UI STYLES
+   ============================================================================ */
+
+/* License required highlighting */
+.license-required-highlight {
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.5) !important;
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+/* License required sections */
+[data-license-required='true'] {
+  opacity: 0.7;
+  cursor: pointer;
+  position: relative;
+}
+
+[data-license-required='true']:hover {
+  opacity: 0.8;
+}
+
+[data-license-required='true']::after {
+  content: '🔒';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 16px;
+  opacity: 0.7;
+}

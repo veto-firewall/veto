@@ -4,7 +4,7 @@
 import { BaseRuleProcessor, CacheCallback } from './BaseRuleProcessor';
 import type { RuleSet } from '../../types';
 import { resolveDomain } from '../../network/NetworkService';
-import { getCountryByIp } from '../../maxmind/MaxMindService';
+import { getCountryByIp, isLocationFilteringAvailable } from '../../maxmind';
 
 /**
  * Handles processing of GeoIP-based rules
@@ -31,6 +31,12 @@ export class GeoIpRuleProcessor extends BaseRuleProcessor {
     cacheKey: string,
     details?: browser.webRequest._OnBeforeRequestDetails,
   ): Promise<{ cancel: boolean } | null> {
+    // Check if location filtering is available with valid license
+    const locationFilteringAvailable = await isLocationFilteringAvailable();
+    if (!locationFilteringAvailable) {
+      return null; // Skip GeoIP processing if no valid license
+    }
+
     if (Object.keys(this.rules.blockedCountries).length === 0) {
       return null;
     }
