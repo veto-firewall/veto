@@ -76,23 +76,57 @@ function setupSettingsEvents(settings: Settings, saveSettings: () => Promise<voi
   if (saveMaxmindBtn) {
     saveMaxmindBtn.addEventListener('click', async () => {
       const licenseKeyInput = document.getElementById('license-key') as HTMLInputElement;
+      const licenseKey = licenseKeyInput.value.trim();
+
+      // Validate license key is not empty
+      if (!licenseKey) {
+        toast.show('Please enter a license key', 'error');
+        return;
+      }
 
       // Show loading state
       setButtonLoadingState(saveMaxmindBtn, true);
 
-      // Update settings with the license key
-      settings.maxmind.licenseKey = licenseKeyInput.value.trim();
-
       try {
+        // Validate license key with MaxMind endpoint
+        toast.show('Validating license key...', 'info');
+
+        const response = await fetch(
+          'https://secret-scanning.maxmind.com/secrets/validate-license-key',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `license_key=${encodeURIComponent(licenseKey)}`,
+          },
+        );
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            toast.show('Invalid license key', 'error');
+          } else if (response.status === 403) {
+            toast.show('License key access denied', 'error');
+          } else {
+            toast.show(`License validation failed (HTTP ${response.status})`, 'error');
+          }
+          return;
+        }
+
+        // Update settings with the validated license key
+        settings.maxmind.licenseKey = licenseKey;
         await saveSettings();
         toast.show('License key saved', 'success');
 
         // Update UI based on new license status
         await updateLicenseBasedUI();
       } catch (error) {
-        toast.show('Failed to save license', 'error');
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        toast.show(`Save failed: ${errorMessage}`, 'error');
+        if (errorMessage.includes('NetworkError') || errorMessage.includes('fetch')) {
+          toast.show('Unable to validate license key - network error', 'error');
+        } else {
+          toast.show(`Validation failed: ${errorMessage}`, 'error');
+        }
       } finally {
         // Reset button
         setButtonLoadingState(saveMaxmindBtn, false);
@@ -252,7 +286,7 @@ function promptForLicense(featureName: string): void {
   }
 
   // Show the message
-  toast.show(`A license key is required to use ${featureName} and Location filters.`, 'info', 5000);
+  toast.show(`A license key is required to use ${featureName} filters.`, 'info', 5000);
 } /**
  * Export the updateLicenseBasedUI function so it can be called from other modules
  */
