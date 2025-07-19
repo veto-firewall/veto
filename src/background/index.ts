@@ -42,44 +42,48 @@ async function initExtension(): Promise<void> {
 
   // Prevent concurrent initializations
   if (isInitializing) {
-    console.log('Initialization already in progress, skipping...');
+    console.log('Background: Initialization already in progress, skipping...');
     return;
   }
 
   if (isInitialized && !needsReinitialization()) {
-    console.log('Extension already initialized and recent, skipping...');
+    console.log('Background: Extension already initialized and recent, skipping...');
     return;
   }
 
   isInitializing = true;
-  console.log('Starting Veto extension initialization...');
+  console.log('Background: Starting Veto extension initialization...');
 
   try {
     // Initialize basic services first (these should be fast and reliable)
+    console.log('Background: Initializing logging service...');
     await initializeLogging();
-    console.log('Logging service initialized');
+    console.log('Background: Logging service initialized');
 
+    console.log('Background: Initializing declarative rule service...');
     await initializeDeclarativeRule();
-    console.log('Declarative rule service initialized');
+    console.log('Background: Declarative rule service initialized');
 
-    // Initialize EventService (this handles more complex initialization)
+    // Initialize EventService (this handles more complex initialization including setupRules)
+    console.log('Background: Initializing event service...');
     await initializeEvent();
-    console.log('Event service initialized');
+    console.log('Background: Event service initialized');
 
     isInitialized = true;
     lastActivityTime = Date.now();
-    console.log('Veto extension initialized successfully');
+    console.log('Background: Veto extension initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize Veto extension:', error);
+    console.error('Background: Failed to initialize Veto extension:', error);
 
     // Try to at least initialize basic event handling
     try {
+      console.log('Background: Attempting fallback initialization...');
       await initializeEvent();
-      console.log('Fallback: Basic event service initialized');
+      console.log('Background: Fallback event service initialized');
       isInitialized = true;
       lastActivityTime = Date.now();
     } catch (fallbackError) {
-      console.error('Critical: Even fallback initialization failed:', fallbackError);
+      console.error('Background: Critical - even fallback initialization failed:', fallbackError);
       // Reset state so we can try again
       isInitialized = false;
     }
@@ -89,29 +93,29 @@ async function initExtension(): Promise<void> {
 } // Firefox MV3 specific initialization
 // onStartup fires when Firefox starts up
 browser.runtime.onStartup.addListener(() => {
-  console.log('Browser startup detected, initializing Veto...');
+  console.log('Background: Browser startup detected, initializing Veto...');
   void initExtension();
 });
 
-// onInstalled fires when the extension is installed/updated
-browser.runtime.onInstalled.addListener(() => {
-  console.log('Extension installed/updated, initializing Veto...');
+// onInstalled fires when the extension is installed/updated/enabled
+browser.runtime.onInstalled.addListener(details => {
+  console.log('Background: Extension event:', details.reason, '- initializing Veto...');
   void initExtension();
 });
 
-// onConnect can be used to detect when popup connects, but don't reinitialize
+// onConnect can be used to detect when popup connects
 browser.runtime.onConnect.addListener(port => {
-  console.log('Port connected:', port.name);
+  console.log('Background: Port connected:', port.name);
   lastActivityTime = Date.now();
 
   // Check if we need to reinitialize
   if (needsReinitialization()) {
-    console.log('Extension needs reinitialization, starting...');
+    console.log('Background: Extension needs reinitialization due to port connection');
     void initExtension();
   }
 });
 
-// Add a message listener to handle reinitialization requests
+// Improved message listener with better ping handling
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   lastActivityTime = Date.now();
 
@@ -122,23 +126,38 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const typedMessage = message as { type: string };
 
-  // If this is a ping message and we're not initialized, reinitialize
-  if (typedMessage.type === 'ping' && needsReinitialization()) {
-    console.log('Ping received, extension needs reinitialization');
-    void initExtension()
-      .then(() => {
-        sendResponse({ success: true, timestamp: Date.now(), reinitialized: true });
-      })
-      .catch(error => {
-        console.error('Reinitialization failed:', error);
-        sendResponse({ success: false, error: String(error) });
-      });
-    return true; // Keep the message channel open for async response
+  // Handle ping messages specially to ensure responsiveness
+  if (typedMessage.type === 'ping') {
+    if (needsReinitialization()) {
+      console.log('Background: Ping received, extension needs reinitialization');
+      void initExtension()
+        .then(() => {
+          sendResponse({ success: true, timestamp: Date.now(), reinitialized: true });
+        })
+        .catch(error => {
+          console.error('Background: Reinitialization failed:', error);
+          sendResponse({ success: false, error: String(error) });
+        });
+      return true; // Keep the message channel open for async response
+    } else {
+      // Already initialized, respond immediately
+      sendResponse({ success: true, timestamp: Date.now(), reinitialized: false });
+      return false;
+    }
   }
 
-  // For other messages, just update activity time - the EventService will handle them
-  return false; // Let other handlers process the message
+  // For other messages, ensure we're initialized
+  if (needsReinitialization()) {
+    console.log(
+      'Background: Message received but extension not initialized, initializing first...',
+    );
+    void initExtension();
+  }
+
+  // Let EventService handle the message
+  return false;
 });
 
-// Initial load initialization
+// Initial load initialization - start immediately when script loads
+console.log('Background: Background script loaded, starting initial initialization...');
 void initExtension();

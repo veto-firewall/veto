@@ -52,39 +52,66 @@ let rules: RuleSet = {} as RuleSet;
  */
 export async function initialize(): Promise<void> {
   try {
+    console.log('EventService: Starting initialization...');
+
     // Load settings and rules
+    console.log('EventService: Loading settings and rules...');
     settings = await getSettings();
     rules = await getRules();
-
-    // Initialize MaxMind service in background (non-blocking)
-    // Don't await this to prevent it from blocking the entire initialization
-    maxMindService.initialize().catch(error => {
-      console.warn('MaxMind service initialization failed (non-critical):', error);
-    });
+    console.log('EventService: Settings and rules loaded successfully');
 
     // Set up event listeners only if not already set up
     if (!listenersSetup) {
+      console.log('EventService: Setting up event listeners...');
       setupMessageListener();
       setupWebRequestListeners();
       setupBrowserShutdownListener();
       setupAndroidSupport();
       listenersSetup = true;
-      console.log('Event listeners set up');
+      console.log('EventService: Event listeners set up');
     } else {
-      console.log('Event listeners already set up, skipping setup');
+      console.log('EventService: Event listeners already set up, skipping setup');
     }
 
-    console.log('Event service initialized successfully');
+    // CRITICAL FIX: Set up declarative rules during initialization
+    // This ensures blocking rules are active immediately when the extension starts
+    console.log('EventService: Setting up declarative rules...');
+    await setupRules(settings, rules);
+    console.log('EventService: Declarative rules set up successfully');
+
+    // Initialize MaxMind service in background (non-blocking)
+    // Don't await this to prevent it from blocking the entire initialization
+    maxMindService.initialize().catch(error => {
+      console.warn('EventService: MaxMind service initialization failed (non-critical):', error);
+    });
+
+    console.log('EventService: Initialization completed successfully');
   } catch (error) {
-    console.error('Critical error in event service initialization:', error);
+    console.error('EventService: Critical error during initialization:', error);
+
     // Still set up basic event listeners even if other parts fail
     if (!listenersSetup) {
+      console.log('EventService: Setting up fallback event listeners...');
       setupMessageListener();
       setupWebRequestListeners();
       setupAndroidSupport();
       listenersSetup = true;
-      console.log('Fallback: Basic event listeners set up');
+      console.log('EventService: Fallback event listeners set up');
     }
+
+    // Try to set up rules even if other initialization failed
+    try {
+      if (settings && rules) {
+        console.log('EventService: Attempting fallback rule setup...');
+        await setupRules(settings, rules);
+        console.log('EventService: Fallback rule setup successful');
+      }
+    } catch (ruleError) {
+      console.error('EventService: Fallback rule setup also failed:', ruleError);
+    }
+
+    // Re-throw the error so the background script knows initialization failed
+    throw error;
   }
 
   return Promise.resolve();
