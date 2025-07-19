@@ -405,6 +405,24 @@ input[type='checkbox']:checked::before {
   transform: rotate(45deg);
 }
 
+/* Disabled checkboxes */
+input[type='checkbox']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--border);
+  background: var(--bg);
+}
+
+input[type='checkbox']:disabled:hover {
+  border-color: var(--border);
+}
+
+input[type='checkbox']:disabled + label {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: var(--text-secondary);
+}
+
 /* Theme Switcher */
 .theme-switch {
   display: flex;
