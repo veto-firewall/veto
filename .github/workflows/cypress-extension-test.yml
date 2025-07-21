@@ -1,0 +1,73 @@
+name: Firefox Extension Tests
+
+on:
+  push:
+    branches: [ main, tests ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cypress-tests:
+    name: Cypress Extension Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Setup Firefox
+        uses: browser-actions/setup-firefox@v1
+        with:
+          firefox-version: 'latest'
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          browser: firefox
+          headless: true
+          spec: cypress/e2e/extension.cy.ts
+          config-file: cypress.config.cjs
+        env:
+          CYPRESS_EXTENSION_PATH: ./dist
+
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 7
+
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-results
+          path: |
+            cypress/reports
+            cypress/results
+          retention-days: 7

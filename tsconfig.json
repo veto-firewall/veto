@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2022",
+    "target": "es2024",
     "module": "esnext",
     "moduleResolution": "node",
     "strict": true,
@@ -8,7 +8,7 @@
     "outDir": "./dist",
     "sourceMap": true,
     "typeRoots": ["./node_modules/@types"],
-    "lib": ["es2022", "dom", "webworker"]
+    "lib": ["es2024", "dom", "webworker"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
