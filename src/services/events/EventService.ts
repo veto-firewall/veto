@@ -47,6 +47,29 @@ let settings: Settings = {} as Settings;
 let rules: RuleSet = {} as RuleSet;
 
 /**
+ * CRITICAL: Register event listeners immediately and synchronously
+ * This function must be called synchronously when the background script loads
+ * to ensure event listeners are registered before any async operations
+ */
+export function registerEventListeners(): void {
+  if (listenersSetup) {
+    console.log('EventService: Event listeners already registered, skipping...');
+    return;
+  }
+
+  console.log('EventService: Registering event listeners synchronously...');
+
+  // Set up event listeners immediately
+  setupMessageListener();
+  setupWebRequestListeners();
+  setupBrowserShutdownListener();
+  setupAndroidSupport();
+
+  listenersSetup = true;
+  console.log('EventService: Event listeners registered successfully');
+}
+
+/**
  * Initialize the event service
  * @returns Promise that resolves when initialization is complete
  */
@@ -54,33 +77,23 @@ export async function initialize(): Promise<void> {
   try {
     console.log('EventService: Starting initialization...');
 
+    // Ensure event listeners are registered (defensive programming)
+    if (!listenersSetup) {
+      registerEventListeners();
+    }
+
     // Load settings and rules
     console.log('EventService: Loading settings and rules...');
     settings = await getSettings();
     rules = await getRules();
     console.log('EventService: Settings and rules loaded successfully');
 
-    // Set up event listeners only if not already set up
-    if (!listenersSetup) {
-      console.log('EventService: Setting up event listeners...');
-      setupMessageListener();
-      setupWebRequestListeners();
-      setupBrowserShutdownListener();
-      setupAndroidSupport();
-      listenersSetup = true;
-      console.log('EventService: Event listeners set up');
-    } else {
-      console.log('EventService: Event listeners already set up, skipping setup');
-    }
-
-    // CRITICAL FIX: Set up declarative rules during initialization
-    // This ensures blocking rules are active immediately when the extension starts
+    // Set up declarative rules during initialization
     console.log('EventService: Setting up declarative rules...');
     await setupRules(settings, rules);
     console.log('EventService: Declarative rules set up successfully');
 
     // Initialize MaxMind service in background (non-blocking)
-    // Don't await this to prevent it from blocking the entire initialization
     maxMindService.initialize().catch(error => {
       console.warn('EventService: MaxMind service initialization failed (non-critical):', error);
     });
@@ -89,14 +102,9 @@ export async function initialize(): Promise<void> {
   } catch (error) {
     console.error('EventService: Critical error during initialization:', error);
 
-    // Still set up basic event listeners even if other parts fail
+    // Ensure event listeners are still registered even if other parts fail
     if (!listenersSetup) {
-      console.log('EventService: Setting up fallback event listeners...');
-      setupMessageListener();
-      setupWebRequestListeners();
-      setupAndroidSupport();
-      listenersSetup = true;
-      console.log('EventService: Fallback event listeners set up');
+      registerEventListeners();
     }
 
     // Try to set up rules even if other initialization failed
@@ -110,11 +118,8 @@ export async function initialize(): Promise<void> {
       console.error('EventService: Fallback rule setup also failed:', ruleError);
     }
 
-    // Re-throw the error so the background script knows initialization failed
     throw error;
   }
-
-  return Promise.resolve();
 }
 
 /**
@@ -184,13 +189,35 @@ function setupBrowserShutdownListener(): void {
  * @param _sender - Message sender (unused)
  * @returns Promise resolving to response data
  */
-function handleMessage(
+async function handleMessage(
   message: ExtensionMsg,
   _sender: browser.runtime.MessageSender,
 ): Promise<unknown> {
   // Type guard to ensure message is valid
   if (!message || typeof message !== 'object') {
     return Promise.resolve({ success: false, error: 'Invalid message format' });
+  }
+
+  // Ensure settings and rules are loaded (critical for MV3)
+  // This handles the case where the background script wakes up from idle
+  if (!settings || Object.keys(settings).length === 0) {
+    console.log('EventService: Settings not loaded, loading now...');
+    try {
+      settings = await getSettings();
+    } catch (error) {
+      console.error('EventService: Failed to load settings:', error);
+      return { success: false, error: 'Failed to load settings' };
+    }
+  }
+
+  if (!rules || Object.keys(rules).length === 0) {
+    console.log('EventService: Rules not loaded, loading now...');
+    try {
+      rules = await getRules();
+    } catch (error) {
+      console.error('EventService: Failed to load rules:', error);
+      return { success: false, error: 'Failed to load rules' };
+    }
   }
 
   // Route messages to appropriate handlers to reduce method complexity
@@ -208,7 +235,7 @@ function handleMessage(
       return Promise.resolve(handleGetRuleLimit());
 
     case 'ping':
-      return Promise.resolve({ success: true, timestamp: Date.now() });
+      return handlePingMessage();
 
     default: {
       // The message is of type 'never' at this point due to exhaustive type checking
@@ -287,6 +314,34 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
     }
     default:
       throw new Error(`Invalid save message type: ${message.type}`);
+  }
+}
+
+/**
+ * Handle ping messages with state validation
+ * @returns Promise resolving to ping response with validation status
+ */
+async function handlePingMessage(): Promise<{
+  success: boolean;
+  timestamp: number;
+  validated?: boolean;
+}> {
+  const timestamp = Date.now();
+
+  try {
+    // Check if declarative rules need to be re-setup
+    // This is critical for when the background script wakes up from idle
+    if (settings && rules && Object.keys(settings).length > 0 && Object.keys(rules).length > 0) {
+      // Validate that declarative rules are still active by attempting to setup again
+      await setupRules(settings, rules);
+      return { success: true, timestamp, validated: true };
+    } else {
+      // State not properly loaded
+      return { success: true, timestamp, validated: false };
+    }
+  } catch (error) {
+    console.error('EventService: Error during ping validation:', error);
+    return { success: true, timestamp, validated: false };
   }
 }
 

@@ -32,6 +32,7 @@ interface CountryLookupCacheResponse {
 interface PingResponse {
   success: boolean;
   timestamp: number;
+  validated?: boolean;
 }
 
 // Helper functions to communicate with background script
