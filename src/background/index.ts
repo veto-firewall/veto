@@ -55,13 +55,21 @@ registerEventListeners();
 // Firefox MV3 specific initialization
 // onStartup fires when Firefox starts up
 browser.runtime.onStartup.addListener(() => {
-  console.log('Background: Browser startup detected, initializing Veto...');
+  console.log(
+    'Background: Browser startup detected, re-registering listeners and initializing Veto...',
+  );
+  registerEventListeners(); // Re-register listeners on startup
   void initExtension();
 });
 
 // onInstalled fires when the extension is installed/updated/enabled
 browser.runtime.onInstalled.addListener(details => {
-  console.log('Background: Extension event:', details.reason, '- initializing Veto...');
+  console.log(
+    'Background: Extension event:',
+    details.reason,
+    '- re-registering listeners and initializing Veto...',
+  );
+  registerEventListeners(); // Re-register listeners on install/update
   void initExtension();
 });
 

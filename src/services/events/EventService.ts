@@ -32,11 +32,6 @@ import { MaxMindService } from '../maxmind/MaxMindService';
 const maxMindService = new MaxMindService();
 
 /**
- * Track if event listeners have been set up to prevent duplicates
- */
-let listenersSetup = false;
-
-/**
  * Current settings
  */
 let settings: Settings = {} as Settings;
@@ -52,24 +47,17 @@ let rules: RuleSet = {} as RuleSet;
  * to ensure event listeners are registered before any async operations
  */
 export function registerEventListeners(): void {
-  if (listenersSetup) {
-    console.log('EventService: Event listeners already registered, skipping...');
-    return;
-  }
-
   console.log('EventService: Registering event listeners synchronously...');
 
-  // Set up event listeners immediately
+  // ALWAYS register listeners - don't check if already setup
+  // This is critical for Firefox MV3 where listeners can be lost during idle
   setupMessageListener();
   setupWebRequestListeners();
   setupBrowserShutdownListener();
   setupAndroidSupport();
 
-  listenersSetup = true;
   console.log('EventService: Event listeners registered successfully');
-}
-
-/**
+} /**
  * Initialize the event service
  * @returns Promise that resolves when initialization is complete
  */
@@ -77,10 +65,8 @@ export async function initialize(): Promise<void> {
   try {
     console.log('EventService: Starting initialization...');
 
-    // Ensure event listeners are registered (defensive programming)
-    if (!listenersSetup) {
-      registerEventListeners();
-    }
+    // Always ensure event listeners are registered fresh
+    registerEventListeners();
 
     // Load settings and rules
     console.log('EventService: Loading settings and rules...');
@@ -102,10 +88,8 @@ export async function initialize(): Promise<void> {
   } catch (error) {
     console.error('EventService: Critical error during initialization:', error);
 
-    // Ensure event listeners are still registered even if other parts fail
-    if (!listenersSetup) {
-      registerEventListeners();
-    }
+    // Always ensure event listeners are registered even if other parts fail
+    registerEventListeners();
 
     // Try to set up rules even if other initialization failed
     try {
@@ -137,28 +121,49 @@ function setupAndroidSupport(): void {
  * Set up the message listener for extension communication
  */
 function setupMessageListener(): void {
-  browser.runtime.onMessage.addListener((message, sender) => {
-    // Apply type guard to handle potential 'any' message data
-    if (message && typeof message === 'object' && 'type' in message) {
-      return handleMessage(message as ExtensionMsg, sender);
-    }
+  // Remove any existing listeners first to avoid duplicates
+  if (browser.runtime.onMessage.hasListener(handleMessageWrapper)) {
+    browser.runtime.onMessage.removeListener(handleMessageWrapper);
+  }
 
-    // Handle invalid messages
-    console.warn('Received invalid message format:', message);
-    return Promise.resolve({ success: false, error: 'Invalid message format' });
-  });
+  // Always re-register the listener
+  browser.runtime.onMessage.addListener(handleMessageWrapper);
+}
+
+/**
+ * Message handler wrapper for consistent listener management
+ */
+function handleMessageWrapper(
+  message: unknown,
+  sender: browser.runtime.MessageSender,
+): Promise<unknown> | undefined {
+  // Apply type guard to handle potential 'any' message data
+  if (message && typeof message === 'object' && 'type' in message) {
+    return handleMessage(message as ExtensionMsg, sender);
+  }
+
+  // Handle invalid messages
+  console.warn('Received invalid message format:', message);
+  return Promise.resolve({ success: false, error: 'Invalid message format' });
 }
 
 /**
  * Set up web request listeners for request interception
+ * CRITICAL: Always register listeners to ensure they survive background script suspension
  */
 function setupWebRequestListeners(): void {
   try {
-    browser.webRequest.onBeforeRequest.addListener(
-      details => handleBeforeRequest(details),
-      { urls: ['<all_urls>'] },
-      ['blocking'],
-    );
+    // Remove any existing listeners first to avoid duplicates
+    if (browser.webRequest.onBeforeRequest.hasListener(handleBeforeRequest)) {
+      browser.webRequest.onBeforeRequest.removeListener(handleBeforeRequest);
+    }
+
+    // Always re-register the listener
+    browser.webRequest.onBeforeRequest.addListener(handleBeforeRequest, { urls: ['<all_urls>'] }, [
+      'blocking',
+    ]);
+
+    console.log('EventService: WebRequest listener registered');
   } catch (e) {
     console.error('Failed to register web request listener:', e);
   }
@@ -170,6 +175,16 @@ function setupWebRequestListeners(): void {
 function setupBrowserShutdownListener(): void {
   browser.runtime.onSuspend.addListener(async () => {
     try {
+      // Ensure settings are loaded
+      if (!settings || Object.keys(settings).length === 0) {
+        try {
+          settings = await getSettings();
+        } catch (error) {
+          console.error('EventService: Failed to load settings during shutdown:', error);
+          return;
+        }
+      }
+
       // Check current settings
       if (settings.suspendUntilFiltersLoad) {
         // Create suspend rule that will be in place on next browser startup
@@ -399,6 +414,11 @@ function handleGetRuleLimit(): number {
  * @returns True if the domain has a terminating allow rule
  */
 function isDomainAllowedByTerminatingRule(hostname: string): boolean {
+  // Ensure rules are loaded
+  if (!rules || Object.keys(rules).length === 0) {
+    return false;
+  }
+
   // Check allowed domains
   const domainMatch = rules.allowedDomains.find(rule => {
     if (!rule.enabled || !rule.isTerminating) return false;
@@ -462,12 +482,14 @@ async function handleBeforeRequest(
   details: browser.webRequest._OnBeforeRequestDetails,
 ): Promise<browser.webRequest.BlockingResponse> {
   try {
-    // Ensure rules and settings are loaded
-    if (!rules) {
+    // Ensure rules and settings are loaded - critical for MV3 persistence
+    if (!rules || Object.keys(rules).length === 0) {
+      console.log('EventService: Loading rules for webRequest handler...');
       rules = await getRules();
     }
 
-    if (!settings) {
+    if (!settings || Object.keys(settings).length === 0) {
+      console.log('EventService: Loading settings for webRequest handler...');
       settings = await getSettings();
     }
 
