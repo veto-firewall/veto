@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VETO",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "Advanced filtering with GeoIP, ASN, domain, URL and content blocking capabilities. Simple Firewall for Privacy and Security",
   "author": "Ruslan Bay",
   "homepage_url": "https://github.com/veto-firewall/veto",
