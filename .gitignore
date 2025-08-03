@@ -1,5 +1,7 @@
 ## Firefox Extension .gitignore
 
+tests/profile
+
 # Dependencies
 node_modules/
 npm-debug.log
