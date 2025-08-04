@@ -8,7 +8,7 @@ const firefoxProfilePath = 'tests/profile';
 const firefoxOptions = {
   browser: 'firefox',
   headless: true,
-  // executablePath: '/home/codespace/.cache/puppeteer/firefox/linux-stable_141.0/firefox/firefox',
+  executablePath: '/home/codespace/.cache/puppeteer/firefox/linux-stable_141.0/firefox/firefox',
   // enableExtensions: extensionPath,
   args: [
     '-profile', firefoxProfilePath,
