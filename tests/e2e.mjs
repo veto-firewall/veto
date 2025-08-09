@@ -25,9 +25,20 @@ const firefoxOptions = {
   await browser.installExtension(`${distribPath}/veto.zip`);
   
   const page = await browser.newPage();
-  // await page.goto(`https://9.9.9.9/dns`);
-  await page.goto(`moz-extension://${EXT_INTERNAL_UUID}/manifest.json`);
-  await page.screenshot({path: 'screenshot.png', fullPage: true});
+  await page.goto(`moz-extension://${EXT_INTERNAL_UUID}/popup.html`, {waitUntil: 'networkidle0'});
+  console.log('Page Title:', await page.title());
+
+  await page.type('#license-key', '123');
+  await page.click('#save-maxmind');
+
+  await page.waitForSelector('.toast-container', { visible: true });
+
+  const errorMessages = await page.$$eval('.toast-message', elements =>
+    elements.map(el => el.textContent));
+
+  if (errorMessages.includes('License validation failed (HTTP 400)')) {
+    console.log('Error message appeared as expected for WRONG key.');
+  }
 
   await browser.uninstallExtension(EXT_ID);
 
