@@ -17,7 +17,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,js,json,html,css}\"",
     "check": "npm run lint && npm run format:check",
     "fix": "npm run lint:fix && npm run format",
-    "web-ext:lint": "npm run build && cd dist && web-ext lint"
+    "web-ext:lint": "npm run build && web-ext lint --source-dir dist",
+    "test": "TR_PATH=tests/reports/$(date --utc +%Y/%m/%d) && mkdir -p $TR_PATH && node --test-reporter-destination $TR_PATH/$(date --utc +%H%M%S).txt --test-reporter tap --test tests/e2e.mjs"
   },
   "dependencies": {
     "buffer": "^6.0.3",
@@ -32,21 +33,22 @@
     "@types/firefox-webext-browser": "^120.0.4",
     "@types/tar-stream": "^3.1.4",
     "@types/validator": "^13.15.2",
-    "@typescript-eslint/eslint-plugin": "^8.37.0",
-    "@typescript-eslint/parser": "^8.37.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
     "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
-    "eslint": "^9.31.0",
+    "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
     "prettier": "^3.6.2",
+    "puppeteer": "^24.16.1",
     "rimraf": "^6.0.1",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.2",
-    "typescript": "^5.8.3",
-    "webpack": "^5.100.2",
+    "typescript": "^5.9.2",
+    "web-ext": "^8.9.0",
+    "webpack": "^5.101.0",
     "webpack-bundle-analyzer": "^4.10.2",
-    "webpack-cli": "^6.0.1",
-    "web-ext": "^8.9.0"
+    "webpack-cli": "^6.0.1"
   }
 }
