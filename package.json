@@ -18,7 +18,7 @@
     "check": "npm run lint && npm run format:check",
     "fix": "npm run lint:fix && npm run format",
     "web-ext:lint": "npm run build && web-ext lint --source-dir dist",
-    "test": "TR_PATH=tests/reports/$(date --utc +%Y/%m/%d) && mkdir -p $TR_PATH && node --test-reporter-destination $TR_PATH/$(date --utc +%H%M%S).txt --test-reporter tap --test tests/e2e.mjs"
+    "test": "TR_PATH=tests/reports/$(date --utc +%Y/%m/%d) && mkdir -p $TR_PATH && node --test-reporter-destination $TR_PATH/$(date --utc +%H%M%S).tap --test-reporter tap --test tests/e2e.mjs"
   },
   "dependencies": {
     "buffer": "^6.0.3",
