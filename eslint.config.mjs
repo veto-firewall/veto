@@ -13,6 +13,7 @@ export default [
   {
     ignores: [
       'node_modules/**',
+      'tests/**',
       'dist/**',
       'assets/**',
       '*.min.js',
