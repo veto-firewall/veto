@@ -57,7 +57,7 @@ jobs:
 
       - name: Submit to Mozilla Add-ons
         if: ${{ github.event.inputs.channel != 'do-not-publish' }}
-        continue-on-error: true
+        continue-on-error: false
         env:
           WEB_EXT_API_KEY: ${{ secrets.MOZILLA_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.MOZILLA_JWT_SECRET }}
@@ -76,7 +76,7 @@ jobs:
             --api-secret="${WEB_EXT_API_SECRET}" \
             --channel=${{ github.event.inputs.channel }} \
             --source-dir=dist/ \
-            --artifacts-dir=web-ext-artifacts/ \
+            --artifacts-dir=web-ext-artifacts \
             --timeout=${timeout} \
             --no-input
 
@@ -90,7 +90,13 @@ jobs:
           git commit -m "Release v${NEW_VERSION}"
           git push origin main
 
+          RELEASE_FILES="dist/veto.zip"
+          
+          if [ -d "web-ext-artifacts" ] && [ "$(ls -A web-ext-artifacts 2>/dev/null)" ]; then
+            RELEASE_FILES="$RELEASE_FILES web-ext-artifacts/*"
+          fi
+
           gh release create "v${NEW_VERSION}" \
             --title "VETO v${NEW_VERSION}" \
             --generate-notes \
-            web-ext-artifacts/*.{zip,xpi} dist/*.zip
+            $RELEASE_FILES
