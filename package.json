@@ -1,6 +1,6 @@
 {
   "name": "veto",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "Advanced filtering with GeoIP, ASN, domain, URL and content blocking capabilities. Simple Firewall for Privacy and Security",
   "main": "index.js",
   "type": "module",
