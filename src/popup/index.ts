@@ -298,12 +298,11 @@ async function loadSettings(): Promise<void> {
     void saveSettingsToBackground();
   });
 
-  // TEMPORARY: Suspend until filters load checkbox is disabled
-  // Event listener removed since the feature is temporarily unavailable
-  // suspendUntilLoadCheckbox.addEventListener('change', () => {
-  //   settings.suspendUntilFiltersLoad = suspendUntilLoadCheckbox.checked;
-  //   void saveSettingsToBackground();
-  // });
+  // Add event listener for suspend until filters load checkbox
+  suspendUntilLoadCheckbox.addEventListener('change', () => {
+    settings.suspendUntilFiltersLoad = suspendUntilLoadCheckbox.checked;
+    void saveSettingsToBackground();
+  });
 
   // Add event listener for HTTP handling dropdown
   httpHandlingSelect.addEventListener('change', () => {
