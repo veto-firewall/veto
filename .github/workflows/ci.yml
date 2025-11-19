@@ -141,23 +141,6 @@ jobs:
         
       - name: Web extension lint
         run: npm run web-ext:lint
-          
-      # Add comment for Dependabot PRs
-      - name: Add result comment for Dependabot
-        if: ${{ github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = ${{ job.status }} === 'success' 
-              ? '✅ Build and tests passed! This PR can be safely merged.'
-              : '❌ Build or tests failed! Please review the logs and make necessary changes.';
-              
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
 
   # Process Dependabot security PRs - auto-approve and merge
   dependabot-auto:
