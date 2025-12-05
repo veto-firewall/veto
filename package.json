@@ -27,7 +27,7 @@
     "lru-cache": "^11.2.2",
     "mmdb-lib": "^3.0.1",
     "tar-stream": "^3.1.7",
-    "validator": "^13.15.20"
+    "validator": "^13.15.22"
   },
   "devDependencies": {
     "@types/firefox-webext-browser": "^143.0.0",
