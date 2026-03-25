@@ -122,7 +122,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P1-9 — Remove specific pass-through and duplicate plumbing
+### [DONE] P1-9 — Remove specific pass-through and duplicate plumbing
 **Goal:** Reduce maintenance overhead by removing abstractions that do not add domain behavior.
 
 **Scope:**

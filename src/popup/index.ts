@@ -1,5 +1,6 @@
 import '../popup/popup.css';
 import type { Settings, RuleSet } from '../services/types';
+import type { ExtensionMsg } from '../services/types';
 import { setupUIEvents } from './services/UIEventHandler';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { Toast } from './components/Toast';
@@ -46,37 +47,41 @@ interface PingResponse {
 }
 
 // Helper functions to communicate with background script
+async function sendBackgroundMessage<TResponse>(message: ExtensionMsg): Promise<TResponse> {
+  return (await browser.runtime.sendMessage(message)) as TResponse;
+}
+
 async function saveSettingsWithBackground(settings: Settings): Promise<void> {
-  const response = (await browser.runtime.sendMessage({
+  const response = await sendBackgroundMessage<SaveResponse>({
     type: 'saveSettings',
     settings: settings,
-  })) as SaveResponse;
+  });
   if (!response?.success) {
     throw new Error('Failed to save settings');
   }
 }
 
 async function saveRulesToBackgroundService(rules: RuleSet): Promise<void> {
-  const response = (await browser.runtime.sendMessage({
+  const response = await sendBackgroundMessage<SaveResponse>({
     type: 'saveRules',
     rules: rules,
-  })) as SaveResponse;
+  });
   if (!response?.success) {
     throw new Error('Failed to save rules');
   }
 }
 
 async function getRuleLimit(): Promise<number> {
-  const response = (await browser.runtime.sendMessage({
+  const response = await sendBackgroundMessage<RuleLimitResponse>({
     type: 'getRuleLimit',
-  })) as RuleLimitResponse;
+  });
   return response?.success ? (response.data?.ruleLimit ?? 0) : 0;
 }
 
 async function getCountryLookupCache(): Promise<Record<string, Record<string, string>>> {
-  const response = (await browser.runtime.sendMessage({
+  const response = await sendBackgroundMessage<CountryLookupCacheResponse>({
     type: 'getCountryLookupCache',
-  })) as CountryLookupCacheResponse;
+  });
   return response?.success && response.data ? response.data : {};
 }
 
@@ -84,18 +89,18 @@ async function setCountryLookupCache(
   type: string,
   data: Record<string, Record<string, string>>,
 ): Promise<void> {
-  (await browser.runtime.sendMessage({
+  await sendBackgroundMessage<SaveResponse>({
     type: 'setCountryLookupCache',
     cacheType: type,
     data: data,
-  })) as SaveResponse;
+  });
 }
 
 async function pingBackground(): Promise<boolean> {
   try {
-    const response = (await browser.runtime.sendMessage({
+    const response = await sendBackgroundMessage<PingResponse>({
       type: 'ping',
-    })) as PingResponse;
+    });
     return response?.success === true;
   } catch (error) {
     console.error('Failed to ping background script:', error);
