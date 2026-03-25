@@ -21,9 +21,6 @@ export * from './maxmind';
 // Export network services
 export * from './network';
 
-// Export MaxMind services
-export * from './maxmind';
-
 // Export logging services
 export * from './logging';
 
