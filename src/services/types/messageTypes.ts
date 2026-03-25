@@ -148,7 +148,7 @@ export type MsgResponse<T extends ExtensionMsg> = T extends MsgGetSettings
                 : T extends MsgGetRuleLimit
                   ? number
                   : T extends MsgParseRules
-                    ? import('./ruleTypes').Rule[]
+                    ? { rules: import('./ruleTypes').Rule[]; errors: string[] }
                     : T extends MsgPing
                       ? { success: boolean; timestamp: number }
                       : never;
