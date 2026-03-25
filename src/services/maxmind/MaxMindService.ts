@@ -35,6 +35,12 @@ interface MMDBFile {
   data: Uint8Array;
 }
 
+interface MaxMindUpdateStatus {
+  success: boolean;
+  timestamp: number;
+  error?: string;
+}
+
 /**
  * Reader instance for MaxMind databases
  */
@@ -46,6 +52,9 @@ interface ReaderInstance<T> {
  * Service for MaxMind GeoIP operations
  */
 export class MaxMindService {
+  private static readonly REQUEST_TIMEOUT_MS = 15000;
+  private static readonly MAX_RETRIES = 3;
+
   /**
    * GeoIP database reader
    */
@@ -286,6 +295,11 @@ export class MaxMindService {
     try {
       if (!this.config || !this.config.licenseKey) {
         console.error('License key is required for MaxMind downloads');
+        await this.setUpdateStatus({
+          success: false,
+          timestamp: Date.now(),
+          error: 'License key is required for MaxMind downloads',
+        });
         return false;
       }
 
@@ -297,14 +311,23 @@ export class MaxMindService {
       const countryUrl = `${baseUrl}-Country${suffix}`;
       const asnUrl = `${baseUrl}-ASN${suffix}`;
 
-      const [countryResponse, asnResponse] = await Promise.all([fetch(countryUrl), fetch(asnUrl)]);
+      const [countryResponse, asnResponse] = await Promise.all([
+        this.fetchWithRetry(countryUrl),
+        this.fetchWithRetry(asnUrl),
+      ]);
 
       if (!countryResponse.ok || !asnResponse.ok) {
-        console.error('Failed to download MaxMind databases', {
+        const errorDetails = {
           countryStatus: countryResponse.status,
           countryStatusText: countryResponse.statusText,
           asnStatus: asnResponse.status,
           asnStatusText: asnResponse.statusText,
+        };
+        console.error('Failed to download MaxMind databases', errorDetails);
+        await this.setUpdateStatus({
+          success: false,
+          timestamp: Date.now(),
+          error: JSON.stringify(errorDetails),
         });
         return false;
       }
@@ -317,20 +340,79 @@ export class MaxMindService {
 
       if (!countryData || !asnData) {
         console.error('Failed to extract database files');
+        await this.setUpdateStatus({
+          success: false,
+          timestamp: Date.now(),
+          error: 'Failed to extract database files',
+        });
         return false;
       }
 
-      // Save the extracted databases
-      await Promise.all([setValue('geoipDatabase', countryData), setValue('asnDatabase', asnData)]);
+      // Save both databases in a single write to avoid partial state commits
+      await browser.storage.local.set({
+        geoipDatabase: countryData,
+        asnDatabase: asnData,
+      });
 
       // Load the databases into memory
       await this.loadGeoIpDatabase();
       await this.loadAsnDatabase();
 
+      await this.setUpdateStatus({
+        success: true,
+        timestamp: Date.now(),
+      });
       return true;
-    } catch (e) {
-      console.error('Error downloading MaxMind databases:', e);
+    } catch (error) {
+      console.error('Error downloading MaxMind databases:', error);
+      await this.setUpdateStatus({
+        success: false,
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : 'Unknown download error',
+      });
       return false;
+    }
+  }
+
+  private async fetchWithRetry(url: string): Promise<Response> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MaxMindService.MAX_RETRIES; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), MaxMindService.REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          return response;
+        }
+
+        if (response.status >= 500 && attempt < MaxMindService.MAX_RETRIES) {
+          continue;
+        }
+
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        lastError = error;
+        if (attempt === MaxMindService.MAX_RETRIES) {
+          break;
+        }
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Failed to fetch ${url} after ${MaxMindService.MAX_RETRIES} attempts`);
+  }
+
+  private async setUpdateStatus(status: MaxMindUpdateStatus): Promise<void> {
+    try {
+      await setValue<MaxMindUpdateStatus>('maxmindUpdateStatus', status);
+    } catch (error) {
+      console.error('Failed to store maxmind update status:', error);
     }
   }
 

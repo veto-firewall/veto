@@ -109,7 +109,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P1-8 — Harden MaxMind download/update pipeline
+### [DONE] P1-8 — Harden MaxMind download/update pipeline
 **Goal:** Improve robustness and failure behavior for DB refresh.
 
 **Scope:**
