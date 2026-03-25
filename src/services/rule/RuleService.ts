@@ -9,8 +9,8 @@ import {
 } from '../storage/StorageService';
 import isFQDN from 'validator/lib/isFQDN.js';
 import isURL from 'validator/lib/isURL.js';
-import isIP from 'validator/lib/isIP.js';
 import isInt from 'validator/lib/isInt.js';
+import { isValid as isValidIp, isValidCIDR } from 'ipaddr.js';
 import { BaseRuleProcessor } from './processors/BaseRuleProcessor';
 import { IpRuleProcessor } from './processors/IpRuleProcessor';
 import { AsnRuleProcessor } from './processors/AsnRuleProcessor';
@@ -170,17 +170,16 @@ export function isValidRuleValue(type: RuleType, value: string): boolean {
       }
     case 'ip':
       try {
-        if (value.includes('/') || value.includes('-')) {
-          // For CIDR and ranges, basic validation
-          const parts = value.includes('/') ? value.split('/') : value.split('-');
-
-          return (
-            parts.length === 2 &&
-            isIP(parts[0].trim()) &&
-            (value.includes('/') ? !isNaN(parseInt(parts[1].trim())) : isIP(parts[1].trim()))
-          );
+        if (value.includes('/')) {
+          return isValidCIDR(value.trim());
         }
-        return isIP(value);
+
+        if (value.includes('-')) {
+          const parts = value.split('-');
+          return parts.length === 2 && isValidIp(parts[0].trim()) && isValidIp(parts[1].trim());
+        }
+
+        return isValidIp(value);
       } catch (error) {
         void error;
         return false;
