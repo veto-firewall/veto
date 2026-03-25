@@ -76,9 +76,9 @@ export interface MsgGetCountryLookupCache extends MessageBase {
 export interface MsgSetCountryLookupCache extends MessageBase {
   type: 'setCountryLookupCache';
   /** Cache key */
-  key: string;
+  cacheType: string;
   /** Cache value */
-  value: Record<string, Record<string, string>> | Record<string, string>;
+  data: Record<string, Record<string, string>> | Record<string, string>;
 }
 
 /**
@@ -126,29 +126,35 @@ export type ExtensionMsg =
   | MsgParseRules
   | MsgPing;
 
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 /**
  * Response type for extension messages
  */
 export type MsgResponse<T extends ExtensionMsg> = T extends MsgGetSettings
   ? Settings
   : T extends MsgSaveSettings
-    ? { success: boolean }
+    ? ApiResponse<null>
     : T extends MsgGetRules
       ? RuleSet
       : T extends MsgSaveRules
-        ? { success: boolean }
+        ? ApiResponse<null>
         : T extends MsgExportRules
           ? string
           : T extends MsgClearCache
-            ? { success: boolean }
+            ? ApiResponse<null>
             : T extends MsgGetCountryLookupCache
-              ? Record<string, Record<string, Record<string, string>> | Record<string, string>>
+              ? ApiResponse<Record<string, Record<string, string>>>
               : T extends MsgSetCountryLookupCache
-                ? { success: boolean }
+                ? ApiResponse<null>
                 : T extends MsgGetRuleLimit
-                  ? number
+                  ? ApiResponse<{ ruleLimit: number }>
                   : T extends MsgParseRules
                     ? { rules: import('./ruleTypes').Rule[]; errors: string[] }
                     : T extends MsgPing
-                      ? { success: boolean; timestamp: number }
+                      ? ApiResponse<{ timestamp: number; validated?: boolean }>
                       : never;
