@@ -110,10 +110,15 @@ export async function initialize(): Promise<void> {
  * Setup Android support - open popup as full page when clicked on mobile
  */
 function setupAndroidSupport(): void {
-  browser.action.onClicked.addListener(() => {
-    void browser.tabs.create({
-      url: browser.runtime.getURL('popup.html'),
-    });
+  if (browser.action.onClicked.hasListener(handleActionClick)) {
+    browser.action.onClicked.removeListener(handleActionClick);
+  }
+  browser.action.onClicked.addListener(handleActionClick);
+}
+
+function handleActionClick(): void {
+  void browser.tabs.create({
+    url: browser.runtime.getURL('popup.html'),
   });
 }
 
@@ -173,27 +178,32 @@ function setupWebRequestListeners(): void {
  * Set up browser shutdown listener to create suspension rule on browser exit
  */
 function setupBrowserShutdownListener(): void {
-  browser.runtime.onSuspend.addListener(async () => {
-    try {
-      // Ensure settings are loaded
-      if (!settings || Object.keys(settings).length === 0) {
-        try {
-          settings = await getSettings();
-        } catch (error) {
-          console.error('EventService: Failed to load settings during shutdown:', error);
-          return;
-        }
-      }
+  if (browser.runtime.onSuspend.hasListener(handleRuntimeSuspend)) {
+    browser.runtime.onSuspend.removeListener(handleRuntimeSuspend);
+  }
+  browser.runtime.onSuspend.addListener(handleRuntimeSuspend);
+}
 
-      // Check current settings
-      if (settings.suspendUntilFiltersLoad) {
-        // Create suspend rule that will be in place on next browser startup
-        await updateSuspendSetting(true);
+async function handleRuntimeSuspend(): Promise<void> {
+  try {
+    // Ensure settings are loaded
+    if (!settings || Object.keys(settings).length === 0) {
+      try {
+        settings = await getSettings();
+      } catch (error) {
+        console.error('EventService: Failed to load settings during shutdown:', error);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to add startup blocking rule:', error);
     }
-  });
+
+    // Check current settings
+    if (settings.suspendUntilFiltersLoad) {
+      // Create suspend rule that will be in place on next browser startup
+      await updateSuspendSetting(true);
+    }
+  } catch (error) {
+    console.error('Failed to add startup blocking rule:', error);
+  }
 }
 
 /**
