@@ -7,9 +7,6 @@ import {
   getRules as getStorageRules,
   saveRules as saveStorageRules,
 } from '../storage/StorageService';
-import isFQDN from 'validator/lib/isFQDN.js';
-import isURL from 'validator/lib/isURL.js';
-import isInt from 'validator/lib/isInt.js';
 import { isValid as isValidIp, isValidCIDR } from 'ipaddr.js';
 import { BaseRuleProcessor } from './processors/BaseRuleProcessor';
 import { IpRuleProcessor } from './processors/IpRuleProcessor';
@@ -160,9 +157,9 @@ export function parseRules(
 export function isValidRuleValue(type: RuleType, value: string): boolean {
   switch (type) {
     case 'domain':
-      return isFQDN(value);
+      return isValidDomain(value);
     case 'url':
-      return isURL(value, { require_protocol: true });
+      return isValidUrl(value);
     case 'tracking':
       // For tracking parameters, accept any non-empty value without special characters
       return /^[a-zA-Z0-9_-]+$/.test(value);
@@ -191,7 +188,7 @@ export function isValidRuleValue(type: RuleType, value: string): boolean {
         return false;
       }
     case 'asn': {
-      return isInt(value);
+      return isValidAsn(value);
     }
     case 'geoip':
       return value.length === 2;
@@ -378,4 +375,34 @@ export async function getRulesText(
   }
 
   return '';
+}
+function isValidDomain(value: string): boolean {
+  if (value.trim() !== value || value.length === 0) return false;
+  if (!URL.canParse(`http://${value}`)) return false;
+
+  try {
+    const parsed = new URL(`http://${value}`);
+    return parsed.hostname.length > 0 && !parsed.hostname.includes(' ');
+  } catch {
+    return false;
+  }
+}
+
+function isValidUrl(value: string): boolean {
+  if (value.trim() !== value || value.length === 0) return false;
+
+  try {
+    const parsed = new URL(value);
+    return (
+      (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isValidAsn(value: string): boolean {
+  if (value.trim() !== value || value.length === 0) return false;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed.toString() === value;
 }
