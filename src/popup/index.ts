@@ -6,6 +6,7 @@ import { Toast } from './components/Toast';
 import {
   populateRuleTextarea,
   parseRulesForType,
+  type ParseRulesForTypeResult,
   updateRulesInStore,
 } from './services/RuleOperations';
 import { exportRules } from './services/FileOperations';
@@ -656,10 +657,22 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
   const rulesText = textarea.value;
 
   // Parse rules
-  const newRules = await parseRulesForType(ruleType, rulesText, actionType, isTerminating);
+  const parseResult: ParseRulesForTypeResult = await parseRulesForType(
+    ruleType,
+    rulesText,
+    actionType,
+    isTerminating,
+  );
+
+  if (parseResult.errors.length > 0) {
+    toast.show(
+      `Invalid entries (${parseResult.errors.length}): ${parseResult.errors.join(', ')}`,
+      'error',
+    );
+  }
 
   // Update rules in the rules object
-  updateRulesInStore(baseId, newRules, rules);
+  updateRulesInStore(baseId, parseResult.rules, rules);
 
   // Save changes
   await saveRulesToBackground();

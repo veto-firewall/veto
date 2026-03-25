@@ -7,10 +7,7 @@ import {
   getRules as getStorageRules,
   saveRules as saveStorageRules,
 } from '../storage/StorageService';
-import isFQDN from 'validator/lib/isFQDN.js';
-import isURL from 'validator/lib/isURL.js';
-import isIP from 'validator/lib/isIP.js';
-import isInt from 'validator/lib/isInt.js';
+import { isValid as isValidIp } from 'ipaddr.js';
 import { BaseRuleProcessor } from './processors/BaseRuleProcessor';
 import { IpRuleProcessor } from './processors/IpRuleProcessor';
 import { AsnRuleProcessor } from './processors/AsnRuleProcessor';
@@ -28,6 +25,37 @@ let ruleId: number | null = null;
  */
 const processors: Map<string, BaseRuleProcessor> = new Map();
 
+function isValidDomain(value: string): boolean {
+  if (value.trim() !== value || value.length === 0) return false;
+  if (!URL.canParse(`http://${value}`)) return false;
+
+  try {
+    const parsed = new URL(`http://${value}`);
+    return parsed.hostname.length > 0 && !parsed.hostname.includes(' ');
+  } catch {
+    return false;
+  }
+}
+
+function isValidUrl(value: string): boolean {
+  if (value.trim() !== value || value.length === 0) return false;
+
+  try {
+    const parsed = new URL(value);
+    return (
+      (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isValidAsn(value: string): boolean {
+  if (value.trim() !== value || value.length === 0) return false;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed.toString() === value;
+}
+
 /**
  * Get rules from storage
  * @returns Promise resolving to the current ruleset
@@ -43,6 +71,11 @@ export async function getRules(): Promise<RuleSet> {
  */
 export async function saveRules(rules: RuleSet): Promise<boolean> {
   return saveStorageRules(rules);
+}
+
+export interface ParseRulesResult {
+  rules: Rule[];
+  errors: string[];
 }
 
 /**
@@ -116,8 +149,9 @@ export function parseRules(
   input: string,
   action: RuleAction,
   isTerminating = true,
-): Rule[] {
+): ParseRulesResult {
   const rules: Rule[] = [];
+  const errors: string[] = [];
 
   // Split by newlines first to properly handle comments
   input.split(/[\r\n]+/).forEach(line => {
@@ -131,13 +165,17 @@ export function parseRules(
     // For multi-value lines (space-separated), process each value
     value.split(/\s+/).forEach(val => {
       const trimmedVal = val.trim();
-      if (trimmedVal && !trimmedVal.startsWith('#') && isValidRuleValue(type, trimmedVal)) {
-        rules.push(createRule(type, trimmedVal, action, isTerminating));
+      if (trimmedVal && !trimmedVal.startsWith('#')) {
+        if (isValidRuleValue(type, trimmedVal)) {
+          rules.push(createRule(type, trimmedVal, action, isTerminating));
+        } else {
+          errors.push(trimmedVal);
+        }
       }
     });
   });
 
-  return rules;
+  return { rules, errors };
 }
 
 /**
@@ -149,11 +187,10 @@ export function parseRules(
 export function isValidRuleValue(type: RuleType, value: string): boolean {
   switch (type) {
     case 'domain':
-      return isFQDN(value);
+      return isValidDomain(value);
     case 'url':
-      return isURL(value, { require_protocol: true });
+      return isValidUrl(value);
     case 'tracking':
-      // For tracking parameters, accept any non-empty value without special characters
       return /^[a-zA-Z0-9_-]+$/.test(value);
     case 'regex':
       try {
@@ -166,25 +203,28 @@ export function isValidRuleValue(type: RuleType, value: string): boolean {
     case 'ip':
       try {
         if (value.includes('/') || value.includes('-')) {
-          // For CIDR and ranges, basic validation
           const parts = value.includes('/') ? value.split('/') : value.split('-');
 
           return (
             parts.length === 2 &&
-            isIP(parts[0].trim()) &&
-            (value.includes('/') ? !isNaN(parseInt(parts[1].trim())) : isIP(parts[1].trim()))
+            isValidIp(parts[0].trim()) &&
+            (value.includes('/')
+              ? Number.isInteger(Number(parts[1].trim())) &&
+                Number(parts[1].trim()) >= 0 &&
+                Number(parts[1].trim()) <= 128
+              : isValidIp(parts[1].trim()))
           );
         }
-        return isIP(value);
+        return isValidIp(value);
       } catch (error) {
         void error;
         return false;
       }
     case 'asn': {
-      return isInt(value);
+      return isValidAsn(value);
     }
     case 'geoip':
-      return value.length === 2;
+      return /^[A-Za-z]{2}$/.test(value);
     default:
       return false;
   }
