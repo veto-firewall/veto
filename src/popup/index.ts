@@ -104,12 +104,7 @@ async function pingBackground(): Promise<boolean> {
 }
 
 // Static import of countries data
-import { countries, continents } from 'countries-list';
-import type {
-  ICountry as _ICountry,
-  TCountries,
-  TContinents as _TContinents,
-} from 'countries-list';
+import { CONTINENT_NAMES, COUNTRIES_BY_CONTINENT } from '../services/maxmind/CountryContinentModel';
 
 let settings: Settings;
 let rules: RuleSet;
@@ -439,11 +434,11 @@ async function setupCountryList(): Promise<void> {
 
   // Use statically imported countries data
   // Process countries data and organize by continent
-  const countriesByContinent = processCountriesData(countries);
+  const countriesByContinent = COUNTRIES_BY_CONTINENT;
   await setCountryLookupCache('byContinent', countriesByContinent);
 
   // Create continent groups
-  Object.entries(continents).forEach(([continentCode, continentName]) => {
+  Object.entries(CONTINENT_NAMES).forEach(([continentCode, continentName]) => {
     const countriesInContinent = countriesByContinent[continentCode];
     if (!countriesInContinent) return;
 
@@ -477,23 +472,6 @@ async function setupCountryList(): Promise<void> {
       continentCheckbox.checked = allCountriesBlocked;
     }
   });
-}
-
-/**
- * Process countries data and organize by continent
- */
-function processCountriesData(countries: TCountries): Record<string, Record<string, string>> {
-  const countriesByContinent: Record<string, Record<string, string>> = {};
-
-  Object.entries(countries).forEach(([code, country]) => {
-    const continentCode = country.continent;
-    if (!countriesByContinent[continentCode]) {
-      countriesByContinent[continentCode] = {};
-    }
-    countriesByContinent[continentCode][code] = country.name;
-  });
-
-  return countriesByContinent;
 }
 
 /**

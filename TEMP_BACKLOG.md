@@ -26,7 +26,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P0-2 — Replace `countries-list` with MMDB-derived country/continent data model
+### [DONE] P0-2 — Replace `countries-list` with MMDB-derived country/continent data model
 **Goal:** Remove redundant dependency and use a single authoritative geo data source.
 
 **Why:** The extension already relies on MaxMind DBs; country/continent metadata should come from that pipeline.
