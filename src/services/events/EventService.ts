@@ -350,8 +350,11 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
  */
 async function handlePingMessage(): Promise<{
   success: boolean;
-  timestamp: number;
-  validated?: boolean;
+  data?: {
+    timestamp: number;
+    validated?: boolean;
+  };
+  error?: string;
 }> {
   const timestamp = Date.now();
 
@@ -361,14 +364,18 @@ async function handlePingMessage(): Promise<{
     if (settings && rules && Object.keys(settings).length > 0 && Object.keys(rules).length > 0) {
       // Validate that declarative rules are still active by attempting to setup again
       await setupRules(settings, rules);
-      return { success: true, timestamp, validated: true };
+      return { success: true, data: { timestamp, validated: true } };
     } else {
       // State not properly loaded
-      return { success: true, timestamp, validated: false };
+      return { success: true, data: { timestamp, validated: false } };
     }
   } catch (error) {
     console.error('EventService: Error during ping validation:', error);
-    return { success: true, timestamp, validated: false };
+    return {
+      success: false,
+      data: { timestamp, validated: false },
+      error: 'Ping validation failed',
+    };
   }
 }
 
@@ -380,25 +387,33 @@ async function handlePingMessage(): Promise<{
 async function handleCacheMessages(message: ExtensionMsg): Promise<unknown> {
   switch (message.type) {
     case 'getCountryLookupCache': {
-      return getCountryLookupCache();
+      const countryLookupCache = getCountryLookupCache();
+      const byContinent = countryLookupCache.get('byContinent');
+      return {
+        success: true,
+        data:
+          byContinent && typeof byContinent === 'object'
+            ? (byContinent as Record<string, Record<string, string>>)
+            : {},
+      };
     }
     case 'setCountryLookupCache': {
       // Define a proper type for the cache message
       type MsgSetCache = {
         type: 'setCountryLookupCache';
-        key: string;
-        value: Record<string, Record<string, string>> | Record<string, string>;
+        cacheType: string;
+        data: Record<string, Record<string, string>> | Record<string, string>;
       };
 
       // Type-safe casting with validation
       const msgCache = message as MsgSetCache;
       if (
-        typeof msgCache.key === 'string' &&
-        msgCache.value &&
-        typeof msgCache.value === 'object'
+        typeof msgCache.cacheType === 'string' &&
+        msgCache.data &&
+        typeof msgCache.data === 'object'
       ) {
         const countryLookupCache = getCountryLookupCache();
-        countryLookupCache.set(msgCache.key, msgCache.value);
+        countryLookupCache.set(msgCache.cacheType, msgCache.data);
         return { success: true };
       }
       return { success: false, error: 'Invalid cache parameters' };
@@ -415,8 +430,8 @@ async function handleCacheMessages(message: ExtensionMsg): Promise<unknown> {
  * Handle getRuleLimit message
  * @returns The maximum number of rules allowed by the browser
  */
-function handleGetRuleLimit(): number {
-  return getRuleLimit();
+function handleGetRuleLimit(): { success: boolean; data: { ruleLimit: number } } {
+  return { success: true, data: { ruleLimit: getRuleLimit() } };
 }
 
 /**
