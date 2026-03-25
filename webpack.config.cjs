@@ -12,6 +12,12 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
+    // Modern extension targets support globalThis. Declaring that capability
+    // prevents webpack from emitting its Function("return this") global helper
+    // (flagged by web-ext lint as DANGEROUS_EVAL).
+    environment: {
+      globalThis: true,
+    },
     clean: true
   },
   optimization: {
