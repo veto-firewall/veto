@@ -50,7 +50,8 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 **Scope:**
 - Introduce typed message schema map.
 - Validate every inbound message in background before dispatch.
-- Standardize response envelope for popup-facing APIs.
+- Standardize response envelope for popup-facing APIs as `{ success, data?, error? }`.
+- Apply the same envelope to `saveSettings`, `saveRules`, `getRuleLimit`, `getCountryLookupCache`, `setCountryLookupCache`, and `ping`.
 
 **Acceptance criteria:**
 - Contract mismatch class of bugs is prevented.
@@ -88,9 +89,12 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 **Scope:**
 - Replace timestamp-based processor keying with deterministic lifecycle.
 - Ensure processors are reused safely or recreated intentionally.
+- Add explicit invalidation rules when settings/rules change.
 
 **Acceptance criteria:**
 - No unbounded map growth from processor instances.
+- No time-based keys in processor cache lifecycle.
+- Processor count remains stable under repeated request processing.
 
 ---
 
@@ -115,6 +119,27 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 **Acceptance criteria:**
 - DB refresh failures are recoverable and observable.
+
+---
+
+### P1-9 — Remove specific pass-through and duplicate plumbing
+**Goal:** Reduce maintenance overhead by removing abstractions that do not add domain behavior.
+
+**Scope:**
+- Remove duplicate `maxmind` re-export in `src/services/index.ts`.
+- Replace duplicated popup message wrappers with a single typed helper used by:
+  - `saveSettingsWithBackground`
+  - `saveRulesToBackgroundService`
+  - `getRuleLimit`
+  - `getCountryLookupCache`
+  - `setCountryLookupCache`
+  - `pingBackground`
+- Keep popup/background behavior unchanged.
+
+**Acceptance criteria:**
+- No duplicate barrel exports in `src/services/index.ts`.
+- Popup message functions use one shared request helper.
+- No behavior regression in save, ping, rule-limit, or country-cache flows.
 
 ---
 
