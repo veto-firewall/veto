@@ -71,7 +71,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P0-5 — Make event listener registration idempotent
+### [DONE] P0-5 — Make event listener registration idempotent
 **Goal:** Prevent duplicate listener registration and side effects.
 
 **Scope:**
