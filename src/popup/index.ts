@@ -656,10 +656,10 @@ async function saveRules(baseId: string, ruleType: string, actionType: string): 
   const rulesText = textarea.value;
 
   // Parse rules
-  const newRules = await parseRulesForType(ruleType, rulesText, actionType, isTerminating);
+  const parseResult = await parseRulesForType(ruleType, rulesText, actionType, isTerminating);
 
   // Update rules in the rules object
-  updateRulesInStore(baseId, newRules, rules);
+  updateRulesInStore(baseId, parseResult.rules, rules);
 
   // Save changes
   await saveRulesToBackground();
