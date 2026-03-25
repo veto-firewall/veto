@@ -5,6 +5,11 @@
 import type { Rule, RuleSet } from '../../services/types';
 import { parseRules } from '../../services/rule/RuleService';
 
+export interface ParseRulesForTypeResult {
+  rules: Rule[];
+  errors: string[];
+}
+
 /**
  * Parse rules for a specific rule type
  *
@@ -12,14 +17,14 @@ import { parseRules } from '../../services/rule/RuleService';
  * @param input - The input string to parse
  * @param actionType - The action type for the rules
  * @param isTerminating - Whether the rules are terminating
- * @returns Promise resolving to an array of rules
+ * @returns Promise resolving to parsed rules and invalid entries
  */
 export async function parseRulesForType(
   ruleType: string,
   input: string,
   actionType: string,
   isTerminating: boolean,
-): Promise<Rule[]> {
+): Promise<ParseRulesForTypeResult> {
   try {
     const response = await parseRules(
       ruleType as 'domain' | 'url' | 'regex' | 'ip' | 'asn' | 'tracking',
@@ -28,16 +33,15 @@ export async function parseRulesForType(
       isTerminating,
     );
 
-    // Validate response is an array before returning
-    if (Array.isArray(response)) {
-      return response as Rule[];
+    if (response && Array.isArray(response.rules) && Array.isArray(response.errors)) {
+      return response as ParseRulesForTypeResult;
     }
 
     console.warn('Invalid response from parseRules:', response);
-    return [];
+    return { rules: [], errors: [] };
   } catch (error) {
     console.error('Error parsing rules:', error);
-    return [];
+    return { rules: [], errors: [] };
   }
 }
 

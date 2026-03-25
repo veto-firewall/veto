@@ -109,15 +109,16 @@ export function createRule(
  * @param input - The input string to parse
  * @param action - The action to take for these rules
  * @param isTerminating - Whether these are terminating rules
- * @returns An array of Rule objects
+ * @returns Parsed rules and validation errors
  */
 export function parseRules(
   type: RuleType,
   input: string,
   action: RuleAction,
   isTerminating = true,
-): Rule[] {
+): { rules: Rule[]; errors: string[] } {
   const rules: Rule[] = [];
+  const errors: string[] = [];
 
   // Split by newlines first to properly handle comments
   input.split(/[\r\n]+/).forEach(line => {
@@ -131,13 +132,17 @@ export function parseRules(
     // For multi-value lines (space-separated), process each value
     value.split(/\s+/).forEach(val => {
       const trimmedVal = val.trim();
-      if (trimmedVal && !trimmedVal.startsWith('#') && isValidRuleValue(type, trimmedVal)) {
-        rules.push(createRule(type, trimmedVal, action, isTerminating));
+      if (trimmedVal && !trimmedVal.startsWith('#')) {
+        if (isValidRuleValue(type, trimmedVal)) {
+          rules.push(createRule(type, trimmedVal, action, isTerminating));
+        } else {
+          errors.push(trimmedVal);
+        }
       }
     });
   });
 
-  return rules;
+  return { rules, errors };
 }
 
 /**
