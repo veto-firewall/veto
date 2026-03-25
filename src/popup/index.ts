@@ -18,22 +18,31 @@ import { getRules } from '../services/storage/StorageService';
 // Type definitions for background script responses
 interface SaveResponse {
   success: boolean;
+  data?: null;
   error?: string;
 }
 
 interface RuleLimitResponse {
-  ruleLimit: number;
+  success: boolean;
+  data?: {
+    ruleLimit: number;
+  };
+  error?: string;
 }
 
 interface CountryLookupCacheResponse {
-  byContinent?: Record<string, Record<string, string>>;
-  [key: string]: unknown;
+  success: boolean;
+  data?: Record<string, Record<string, string>>;
+  error?: string;
 }
 
 interface PingResponse {
   success: boolean;
-  timestamp: number;
-  validated?: boolean;
+  data?: {
+    timestamp: number;
+    validated?: boolean;
+  };
+  error?: string;
 }
 
 // Helper functions to communicate with background script
@@ -61,14 +70,14 @@ async function getRuleLimit(): Promise<number> {
   const response = (await browser.runtime.sendMessage({
     type: 'getRuleLimit',
   })) as RuleLimitResponse;
-  return response?.ruleLimit || 0;
+  return response?.success ? (response.data?.ruleLimit ?? 0) : 0;
 }
 
-async function getCountryLookupCache(): Promise<CountryLookupCacheResponse> {
+async function getCountryLookupCache(): Promise<Record<string, Record<string, string>>> {
   const response = (await browser.runtime.sendMessage({
     type: 'getCountryLookupCache',
   })) as CountryLookupCacheResponse;
-  return response;
+  return response?.success && response.data ? response.data : {};
 }
 
 async function setCountryLookupCache(
@@ -629,8 +638,7 @@ async function updateContinentCheckbox(continentCode: string): Promise<void> {
   if (!continentCheckbox) return;
 
   const cacheData = await getCountryLookupCache();
-  const countriesByContinent =
-    (cacheData?.byContinent as unknown as Record<string, Record<string, string>>) || {};
+  const countriesByContinent = cacheData || {};
   if (!countriesByContinent || !countriesByContinent[continentCode]) return;
 
   const allCountries = Object.keys(countriesByContinent[continentCode]);

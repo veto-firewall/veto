@@ -42,7 +42,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P0-3 — Message contract hardening between popup and background
+### [DONE] P0-3 — Message contract hardening between popup and background
 **Goal:** Eliminate payload drift with validated message schemas.
 
 **Why:** A known message field mismatch currently exists and can silently fail.
@@ -59,7 +59,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P0-4 — Fix `getRuleLimit` response protocol mismatch
+### [DONE] P0-4 — Fix `getRuleLimit` response protocol mismatch
 **Goal:** Ensure popup gets reliable rule-limit data.
 
 **Scope:**
