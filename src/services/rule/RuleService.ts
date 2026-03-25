@@ -23,7 +23,13 @@ let ruleId: number | null = null;
 /**
  * Rule processors cache for different rule types
  */
-const processors: Map<string, BaseRuleProcessor> = new Map();
+interface ProcessorCacheEntry {
+  processor: BaseRuleProcessor;
+  rulesRef: RuleSet;
+  cacheCallbackRef: CacheCallback;
+}
+
+const processors: Map<string, ProcessorCacheEntry> = new Map();
 
 function isValidDomain(value: string): boolean {
   if (value.trim() !== value || value.length === 0) return false;
@@ -282,26 +288,33 @@ function getProcessor(
   rules: RuleSet,
   cacheCallback: CacheCallback,
 ): BaseRuleProcessor {
-  // Create a unique key for this processor instance
-  const key = `${type}-${Date.now()}`;
-
-  if (!processors.has(key)) {
-    switch (type) {
-      case 'ip':
-        processors.set(key, new IpRuleProcessor(rules, cacheCallback));
-        break;
-      case 'asn':
-        processors.set(key, new AsnRuleProcessor(rules, cacheCallback));
-        break;
-      case 'geoip':
-        processors.set(key, new GeoIpRuleProcessor(rules, cacheCallback));
-        break;
-      default:
-        throw new Error(`Unknown processor type: ${type}`);
-    }
+  const existing = processors.get(type);
+  if (existing && existing.rulesRef === rules && existing.cacheCallbackRef === cacheCallback) {
+    return existing.processor;
   }
 
-  return processors.get(key)!;
+  let processor: BaseRuleProcessor;
+  switch (type) {
+    case 'ip':
+      processor = new IpRuleProcessor(rules, cacheCallback);
+      break;
+    case 'asn':
+      processor = new AsnRuleProcessor(rules, cacheCallback);
+      break;
+    case 'geoip':
+      processor = new GeoIpRuleProcessor(rules, cacheCallback);
+      break;
+    default:
+      throw new Error(`Unknown processor type: ${type}`);
+  }
+
+  processors.set(type, {
+    processor,
+    rulesRef: rules,
+    cacheCallbackRef: cacheCallback,
+  });
+
+  return processor;
 }
 
 /**

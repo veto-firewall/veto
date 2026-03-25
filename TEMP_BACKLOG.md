@@ -83,7 +83,7 @@ It is intentionally lightweight (no issue tracker overhead) and optimized for it
 
 ---
 
-### P0-6 — Fix processor lifecycle/cache design bug
+### [DONE] P0-6 — Fix processor lifecycle/cache design bug
 **Goal:** Remove timestamp-keyed pseudo-cache behavior.
 
 **Scope:**

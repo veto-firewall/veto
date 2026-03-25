@@ -6,7 +6,7 @@ import type { ExtensionMsg, MsgSaveSettings, MsgSaveRules } from '../types';
 import type { Settings, RuleSet } from '../types';
 
 // Function imports from converted services
-import { getRules, saveRules, processRules } from '../rule/RuleService';
+import { getRules, saveRules, processRules, clearProcessorCache } from '../rule/RuleService';
 
 // Service imports - these may still be class-based or function-based
 import { getSettings, saveSettings } from '../storage/StorageService';
@@ -298,6 +298,7 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
       settings = msgSaveSettings.settings;
       await saveSettings(settings);
       clearAllCaches();
+      clearProcessorCache();
 
       // Handle suspend setting change
       if (suspendSettingChanged) {
@@ -333,6 +334,7 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
 
       // Clear all caches when rules are updated
       clearAllCaches();
+      clearProcessorCache();
 
       await setupRules(settings, rules);
       return { success: true };
