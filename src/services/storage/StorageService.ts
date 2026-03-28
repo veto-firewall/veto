@@ -26,7 +26,7 @@ const DEFAULT_RULESET: RuleSet = {
 /**
  * Default settings used when no settings are found in storage
  */
-const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS: Settings = {
   suspendUntilFiltersLoad: false,
   maxmind: {
     licenseKey: '',

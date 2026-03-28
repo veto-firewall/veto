@@ -62,6 +62,9 @@ export function ipMatchesRange(ip: string, range: string): boolean {
       // Start-end range (e.g., "192.168.1.1-192.168.1.100")
       const [start, end] = range.split('-').map(part => parse(part.trim()));
       const addr = parse(ip);
+      if (!start || !end) {
+        return false;
+      }
 
       if (start.kind() !== end.kind() || addr.kind() !== start.kind()) {
         return false;
@@ -165,6 +168,9 @@ export async function resolveDomain(
     const result = await browser.dns.resolve(domain);
     if (result && result.addresses && result.addresses.length > 0) {
       const ip = result.addresses[0];
+      if (!ip) {
+        return null;
+      }
       cache.set(domain, ip);
       return ip;
     } else {
