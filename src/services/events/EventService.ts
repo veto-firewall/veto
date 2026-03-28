@@ -310,10 +310,13 @@ async function handleSaveMessages(message: ExtensionMsg): Promise<{ success: boo
       if (maxMindLicenseKeyChanged) {
         try {
           // Direct MaxMind service access
-          await maxMindService.updateConfig({
+          const maxMindConfig = {
             licenseKey: msgSaveSettings.settings.maxmind.licenseKey,
-            lastDownload: settings.maxmind.lastDownload,
-          });
+            ...(typeof settings.maxmind.lastDownload === 'number'
+              ? { lastDownload: settings.maxmind.lastDownload }
+              : {}),
+          };
+          await maxMindService.updateConfig(maxMindConfig);
 
           // Refresh MaxMind service
           const _refreshSuccess = await maxMindService.refreshService();

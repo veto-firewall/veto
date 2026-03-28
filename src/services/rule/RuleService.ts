@@ -179,7 +179,16 @@ export function isValidRuleValue(type: RuleType, value: string): boolean {
 
         if (value.includes('-')) {
           const parts = value.split('-');
-          return parts.length === 2 && isValidIp(parts[0].trim()) && isValidIp(parts[1].trim());
+          if (parts.length !== 2) {
+            return false;
+          }
+
+          const [start, end] = parts;
+          if (!start || !end) {
+            return false;
+          }
+
+          return isValidIp(start.trim()) && isValidIp(end.trim());
         }
 
         return isValidIp(value);

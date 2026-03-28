@@ -65,7 +65,7 @@ export abstract class BaseRuleProcessor {
     logBlockedRequest({
       url: details.url,
       domain: url.hostname,
-      ip: ip,
+      ...(ip ? { ip } : {}),
       resourceType: details.type || 'unknown',
       blockReason,
       ...extraInfo,
