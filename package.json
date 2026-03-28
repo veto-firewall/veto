@@ -7,7 +7,7 @@
   "sideEffects": false,
   "scripts": {
     "clean": "rimraf dist",
-    "prebuild": "npm run clean",
+    "type-check": "tsc --noEmit",
     "build": "webpack --mode production --config webpack.config.cjs",
     "package": "npm run build && cd dist && zip -r veto.zip * && cd ..",
     "package:win": "npm run build && cd dist && powershell Compress-Archive -Path * -DestinationPath veto.zip -Force && cd ..",
