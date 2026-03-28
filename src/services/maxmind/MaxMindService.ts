@@ -447,7 +447,7 @@ export class MaxMindService {
       const selectedFile = this.selectMMDBFile(mmdbFiles, databaseType);
 
       // Return the data as an ArrayBuffer for consistency
-      return selectedFile.data.buffer;
+      return selectedFile.data.slice().buffer;
     } catch (e) {
       console.error('Error extracting MMDB from tar.gz:', e);
       return null;
@@ -530,8 +530,13 @@ export class MaxMindService {
    * @returns Selected file
    */
   private selectMMDBFile(files: Array<MMDBFile>, databaseType?: string): MMDBFile {
+    const firstFile = files[0];
+    if (!firstFile) {
+      throw new Error('No MMDB files available');
+    }
+
     // Default to the first file if no database type specified
-    let selectedFile = files[0];
+    let selectedFile: MMDBFile = firstFile;
 
     if (databaseType) {
       const matchingFile = files.find(f =>

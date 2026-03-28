@@ -107,8 +107,9 @@ export async function populateRuleTextarea(textareaId: string, ruleList: Rule[])
     // Set the terminating checkbox
     const checkboxId = `${textareaId}-terminating`;
     const checkbox = document.getElementById(checkboxId) as HTMLInputElement;
-    if (checkbox) {
-      checkbox.checked = ruleList[0].isTerminating;
+    const firstRule = ruleList[0];
+    if (checkbox && firstRule) {
+      checkbox.checked = firstRule.isTerminating;
     }
   }
   // If there are no rules, try to load content from filter files

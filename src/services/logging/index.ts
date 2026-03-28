@@ -1,4 +1,4 @@
 /**
  * Export the LoggingService
  */
-export { LoggingService, type BlockReason, type RequestLogData } from './LoggingService';
+export { initialize, logBlockedRequest, type BlockReason, type RequestLogData } from './LoggingService';
