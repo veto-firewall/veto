@@ -1,7 +1,9 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+
+const isAnalyzeEnabled = process.env.ANALYZE === 'true';
 
 module.exports = {
   target: 'web',
@@ -35,10 +37,6 @@ module.exports = {
           loader: 'ts-loader',
           options: {
             transpileOnly: true,
-            compilerOptions: {
-              module: 'es2022',
-              target: 'es2022',
-            },
           },
         },
         exclude: /node_modules/,
@@ -69,12 +67,16 @@ module.exports = {
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
     }),
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      reportFilename: '../docs/bundle-report.html',
-      openAnalyzer: false,
-      logLevel: 'silent',
-    }),
+    ...(isAnalyzeEnabled
+      ? [
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            reportFilename: '../docs/bundle-report.html',
+            openAnalyzer: false,
+            logLevel: 'silent',
+          }),
+        ]
+      : []),
   ],
   stats: 'errors-only',
   performance: {
