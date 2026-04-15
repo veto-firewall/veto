@@ -14,8 +14,9 @@
     "outDir": "./dist",
     "sourceMap": true,
     "typeRoots": ["./node_modules/@types"],
-    "lib": ["esnext", "dom", "webworker"]
+    "lib": ["esnext", "dom", "webworker"],
+    "types": ["firefox-webext-browser"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "global.d.ts"],
   "exclude": ["node_modules"]
 }
