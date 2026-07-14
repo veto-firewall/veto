@@ -7,14 +7,7 @@
  * Block reason types for request blocking
  */
 export type BlockReason =
-  | 'ip'
-  | 'asn'
-  | 'geoip'
-  | 'domain'
-  | 'url'
-  | 'regex'
-  | 'private-ip'
-  | 'content';
+  'ip' | 'asn' | 'geoip' | 'domain' | 'url' | 'regex' | 'private-ip' | 'content';
 
 /**
  * Request log data interface containing information about blocked requests
