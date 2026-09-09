@@ -9,7 +9,6 @@ import { isValid as _isValid } from 'ipaddr.js';
 import { Reader } from 'mmdb-lib';
 import type { CountryResponse, AsnResponse } from 'mmdb-lib/lib/reader/response';
 import * as tarStream from 'tar-stream';
-import type { Readable } from 'stream';
 
 /**
  * Settings interface with MaxMind configuration
@@ -467,7 +466,7 @@ export class MaxMindService {
     // Set up promise for extraction completion
     const extractionPromise = new Promise<Array<MMDBFile>>((resolve, reject) => {
       // Handle file entries in the tar
-      extractor.on('entry', (header: tarStream.Headers, stream: Readable, next: () => void) => {
+      extractor.on('entry', (header, stream, next) => {
         // Only process files with .mmdb extension
         if (header.type !== 'file' || !header.name.toLowerCase().endsWith('.mmdb')) {
           stream.resume(); // Skip this file
@@ -477,7 +476,7 @@ export class MaxMindService {
 
         const chunks: Uint8Array[] = [];
 
-        stream.on('data', (chunk: Buffer | Uint8Array) => chunks.push(new Uint8Array(chunk)));
+        stream.on('data', chunk => chunks.push(new Uint8Array(chunk as Uint8Array)));
 
         stream.on('end', () => {
           // Concatenate chunks into a single Uint8Array
@@ -509,7 +508,7 @@ export class MaxMindService {
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          extractor.end();
+          extractor.end(undefined);
           break;
         }
         extractor.write(value);

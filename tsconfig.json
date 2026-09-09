@@ -15,7 +15,7 @@
     "sourceMap": true,
     "typeRoots": ["./node_modules/@types"],
     "lib": ["esnext", "dom", "webworker"],
-    "types": ["firefox-webext-browser"]
+    "types": ["firefox-webext-browser", "node"]
   },
   "include": ["src/**/*", "global.d.ts"],
   "exclude": ["node_modules"]
